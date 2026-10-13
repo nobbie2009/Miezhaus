@@ -15,6 +15,7 @@ import { JobDialog } from '@/features/jobs/JobDialog';
 import { formatDate } from '@/utils/date';
 import { formatMoney } from '@/utils/money';
 import { Money, SEVERITY_TEXT, SEVERITY_TONE } from '@/features/common';
+import { GfxImage } from '@/features/graphics/Gfx';
 
 const RENEWAL: Partial<Record<ComponentKey, string>> = {
   roof: 'roof_renovation',
@@ -108,7 +109,10 @@ export function BuildingPage() {
               return (
                 <button key={k} onClick={() => setSel(k)} className={`rounded-lg p-2 text-left transition hover:bg-muted ${sel === k ? 'bg-primary/5 ring-1 ring-primary/30' : ''}`}>
                   <div className="mb-1 flex items-center justify-between text-sm">
-                    <span className="font-medium">{COMPONENTS[k].label}</span>
+                    <span className="flex items-center gap-2 font-medium">
+                      <GfxImage id={`component.${k}`} className="h-6 w-6 object-contain" />
+                      {COMPONENTS[k].label}
+                    </span>
                     <span className="flex items-center gap-1.5">
                       {n > 0 && <Badge tone="warning">{n} Schaden</Badge>}
                       <span className="num text-xs font-semibold">{Math.round(cc.condition)} %</span>

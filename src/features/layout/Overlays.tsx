@@ -10,6 +10,7 @@ import { cn } from '@/utils/misc';
 import { NAV } from './nav';
 import { computeScore, scoreGrade } from '@/game/score';
 import { targetLabel } from '@/game/defects';
+import { GfxImage } from '@/features/graphics/Gfx';
 
 export function Toasts() {
   const toasts = useGame((s) => s.toasts);
@@ -54,6 +55,7 @@ export function DecisionModal() {
       }
       description={`Entscheidung bis ${formatDate(d.expiresDay)} – danach gilt automatisch die Standardoption.${s.decisions.length > 1 ? ` (${s.decisions.length - 1} weitere offen)` : ''}`}
     >
+      <GfxImage id={`event.${d.eventId}`} fallbackId="event.generic" className="mb-4 aspect-[12/5] w-full rounded-xl object-cover" />
       <p className="mb-4 text-sm leading-relaxed">{d.text}</p>
       <div className="space-y-2">
         {d.options.map((o) => (

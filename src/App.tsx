@@ -22,6 +22,7 @@ import { EventsPage } from '@/pages/Events';
 import { StatisticsPage } from '@/pages/Statistics';
 import { GoalsPage } from '@/pages/Goals';
 import { SettingsPage } from '@/pages/Settings';
+import { useGfxStore } from '@/features/graphics/useGraphics';
 
 const PAGES: Record<PageId, React.ComponentType> = {
   overview: OverviewPage,
@@ -104,6 +105,9 @@ function GameShell() {
 export default function App() {
   const hasGame = useGame((x) => !!x.game);
   const theme = useUi((x) => x.theme);
+  React.useEffect(() => {
+    void useGfxStore.getState().probe();
+  }, []);
   React.useEffect(() => {
     applyTheme(theme);
     if (theme !== 'system') return;

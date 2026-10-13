@@ -11,6 +11,7 @@ import { formatDate } from '@/utils/date';
 import { formatMoney } from '@/utils/money';
 import { cn } from '@/utils/misc';
 import { Money, SatisfactionFace, satTone } from '@/features/common';
+import { Portrait } from '@/features/graphics/Gfx';
 
 const FACTOR_HINT: Record<string, string> = {
   Miete: 'Verhältnis der Miete zur Vergleichsmiete, gewichtet mit der Sparsamkeit.',
@@ -49,7 +50,7 @@ export function TenantsPage() {
           initialSort={{ key: 'sat', dir: 1 }}
           empty={tab === 'active' ? 'Keine Mieter.' : 'Noch keine ehemaligen Mieter.'}
           columns={[
-            { key: 'name', header: 'Name', cell: (t) => <span className="flex items-center gap-1.5 font-medium"><SatisfactionFace value={t.satisfaction} />{t.name}</span>, sort: (t) => t.name },
+            { key: 'name', header: 'Name', cell: (t) => <span className="flex items-center gap-2 font-medium"><Portrait id={t.id} name={t.name} archetype={t.archetype} size={28} /><SatisfactionFace value={t.satisfaction} />{t.name}</span>, sort: (t) => t.name },
             { key: 'apt', header: 'Whg.', cell: (t) => apartmentOf(s, t)?.number ?? '–', sort: (t) => apartmentOf(s, t)?.number ?? '' },
             { key: 'arch', header: 'Typ', cell: (t) => <span className="text-xs text-muted-fg">{ARCHETYPE_BY_ID[t.archetype]?.label}</span> },
             { key: 'sat', header: 'Zufriedenheit', align: 'right', cell: (t) => <span className={cn('font-semibold', satTone(t.satisfaction) === 'success' ? 'text-success' : satTone(t.satisfaction) === 'warning' ? 'text-warning' : 'text-danger')}>{Math.round(t.satisfaction)} %</span>, sort: (t) => t.satisfaction },
@@ -75,6 +76,9 @@ function TenantDetail({ t }: { t: Tenant }) {
   return (
     <div className="min-w-0 space-y-5">
       <Card>
+        <div className="flex items-center gap-4 border-b border-border/70 px-4 pt-4">
+          <Portrait id={t.id} name={t.name} archetype={t.archetype} size={72} className="mb-3" />
+        </div>
         <CardHeader
           title={t.name}
           subtitle={`${arch?.label ?? ''} · ${t.occupation} · ${t.householdSize} Person(en)`}

@@ -8,6 +8,9 @@ services:
       - PORT=8080
     ports:
       - "${HOST_PORT:-8080}:8080"
+    # Eigene Grafiken ohne Neubau einbinden (siehe docs/GRAFIKEN.md):
+    # volumes:
+    #   - ./gfx:/usr/share/nginx/html/gfx:ro
     read_only: true
     tmpfs:
       - /tmp

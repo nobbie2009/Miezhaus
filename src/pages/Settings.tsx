@@ -7,6 +7,8 @@ import { Badge, Button, Card, CardBody, CardHeader, Confirm, Field, Tabs } from 
 import { SaveManager } from '@/features/saves/SaveManager';
 import { SCENARIO_BY_ID } from '@/content/scenarios';
 import { ollamaProvider } from '@/ai/textProvider';
+import { GraphicsStatus } from '@/features/graphics/GraphicsStatus';
+import { Image as ImageIcon } from 'lucide-react';
 
 export function SettingsPage() {
   const s = useGs();
@@ -101,6 +103,12 @@ export function SettingsPage() {
             Spielstände liegen in der IndexedDB dieses Browsers und sind an Browser und Adresse (Domain/Port) gebunden. Ein Docker-Neustart beeinflusst sie nicht – das Löschen der Browserdaten oder ein Wechsel der Adresse schon. Exportieren Sie wichtige Spielstände regelmäßig als JSON-Datei.
           </p>
           <SaveManager />
+        </CardBody>
+      </Card>
+      <Card className="lg:col-span-2">
+        <CardHeader title="Grafiken & Texturen" icon={<ImageIcon size={16} />} subtitle="Eigene Grafiken werden automatisch erkannt" />
+        <CardBody>
+          <GraphicsStatus />
         </CardBody>
       </Card>
       <Card className="lg:col-span-2">

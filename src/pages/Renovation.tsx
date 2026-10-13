@@ -12,6 +12,7 @@ import { STATUS_LABEL } from '@/features/common';
 import { formatMoney, mulCents } from '@/utils/money';
 import { cn } from '@/utils/misc';
 import { formatDate } from '@/utils/date';
+import { GfxImage } from '@/features/graphics/Gfx';
 
 export function RenovationPage() {
   const s = useGs();
@@ -71,7 +72,8 @@ export function RenovationPage() {
           const cost = mulCents(m.baseCost(s, a), materialIndex(s));
           const running = s.jobs.some((j) => j.measureId === m.id && (j.status === 'scheduled' || j.status === 'in_progress') && (m.scope === 'building' || (j.target.kind === 'apartment' && j.target.apartmentId === a?.id)));
           return (
-            <Card key={m.id} className={cn('flex flex-col', !ok && 'opacity-60')}>
+            <Card key={m.id} className={cn('flex flex-col overflow-hidden', !ok && 'opacity-60')}>
+              <GfxImage id={`measure.${m.id}`} className="aspect-[2/1] w-full object-cover" />
               <CardHeader title={m.label} subtitle={`${CATEGORY_LABEL[m.category]} · ${TRADE_LABEL[m.trade]}`} icon={ok ? <Paintbrush size={15} /> : <Lock size={15} />} actions={m.subsidyEligible && <Badge tone="success">förderfähig</Badge>} />
               <CardBody className="flex flex-1 flex-col gap-3">
                 <p className="text-sm text-muted-fg">{m.description}</p>

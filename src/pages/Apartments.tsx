@@ -18,6 +18,7 @@ import { formatDate } from '@/utils/date';
 import { formatMoney } from '@/utils/money';
 import { cn } from '@/utils/misc';
 import { apartmentHeatingCost } from '@/game/tenants';
+import { Portrait } from '@/features/graphics/Gfx';
 
 type Filter = 'all' | 'rented' | 'vacant' | 'work';
 
@@ -128,6 +129,7 @@ function ApartmentDetail({ apt, onTenant }: { apt: Apartment; onTenant: (id: str
           <div className="border-t border-border px-4 py-3">
             <button onClick={() => onTenant(t.id)} className="flex w-full items-center justify-between gap-2 rounded-lg p-2 text-left hover:bg-muted">
               <span className="flex items-center gap-2">
+                <Portrait id={t.id} name={t.name} archetype={t.archetype} size={40} />
                 <SatisfactionFace value={t.satisfaction} size={22} />
                 <span>
                   <span className="block text-sm font-semibold">{t.name}</span>
@@ -233,7 +235,9 @@ function ApplicantCard({ ap, apt, onOffer, onReject }: { ap: Applicant; apt: Apa
   return (
     <div className="rounded-xl border border-border p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
+        <div className="flex items-start gap-3">
+          <Portrait id={ap.id} name={ap.name} archetype={ap.archetype} size={44} />
+          <div>
           <div className="flex items-center gap-2 text-sm font-semibold">
             {ap.name}
             {ap.referredBy && <Badge tone="success">Empfehlung</Badge>}
@@ -245,6 +249,7 @@ function ApplicantCard({ ap, apt, onOffer, onReject }: { ap: Applicant; apt: Apa
           </div>
           <div className="text-xs text-muted-fg">
             {arch?.label} · {ap.occupation} · {ap.householdSize} Pers.
+          </div>
           </div>
         </div>
         <div className="text-right">

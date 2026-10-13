@@ -5,6 +5,7 @@ import { Tip } from '@/components/ui';
 import { cn } from '@/utils/misc';
 import { NAV } from './nav';
 import { PHASES } from '@/game/progression';
+import { GfxImage } from '@/features/graphics/Gfx';
 
 export function Sidebar() {
   const s = useGame((x) => x.game)!;
@@ -17,7 +18,7 @@ export function Sidebar() {
       <aside className={cn('fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-border bg-card transition-transform lg:sticky lg:top-0 lg:h-screen lg:translate-x-0', sidebarOpen ? 'translate-x-0' : '-translate-x-full')}>
         <div className="flex items-center justify-between gap-2 px-4 py-4">
           <div className="flex items-center gap-2.5">
-            <img src="/favicon.svg" alt="" className="h-9 w-9" />
+            <GfxImage id="ui.logo" className="h-9 w-9 object-contain" fallback={<img src="/favicon.svg" alt="" className="h-9 w-9" />} />
             <div>
               <div className="text-sm font-extrabold leading-tight tracking-tight">Mietshaus Tycoon</div>
               <div className="text-[11px] text-muted-fg">

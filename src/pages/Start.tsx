@@ -13,6 +13,8 @@ import { formatDate } from '@/utils/date';
 import { formatMoney } from '@/utils/money';
 import { cn } from '@/utils/misc';
 import { Toasts } from '@/features/layout/Overlays';
+import { GfxImage } from '@/features/graphics/Gfx';
+import { useGfx } from '@/features/graphics/useGraphics';
 
 type Mode = 'campaign' | 'endless' | 'challenge' | 'sandbox';
 
@@ -34,16 +36,18 @@ export function StartScreen() {
     navigate('overview');
   };
   const scenarios = SCENARIOS.filter((s) => s.mode === mode);
+  const startBg = useGfx('bg.start');
   return (
     <TooltipProvider>
-      <div className="min-h-full bg-gradient-to-b from-primary/10 via-bg to-bg">
-        <div className="mx-auto max-w-6xl px-4 py-8 sm:py-12">
+      <div className="relative min-h-full bg-gradient-to-b from-primary/10 via-bg to-bg">
+        {startBg && <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[640px] bg-cover bg-center opacity-25 dark:opacity-15" style={{ backgroundImage: `url(${startBg})`, maskImage: 'linear-gradient(to bottom, black 40%, transparent)' }} />}
+        <div className="relative mx-auto max-w-6xl px-4 py-8 sm:py-12">
           <div className="grid items-center gap-8 lg:grid-cols-[1fr_1.1fr]">
             <div>
               <div className="flex items-center gap-3">
-                <img src="/favicon.svg" alt="" className="h-14 w-14" />
+                <GfxImage id="ui.logo" className="h-14 w-14 object-contain" fallback={<img src="/favicon.svg" alt="" className="h-14 w-14" />} />
                 <div>
-                  <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Mietshaus Tycoon</h1>
+                  <GfxImage id="ui.logo_wide" alt="Mietshaus Tycoon" className="h-12 w-auto" fallback={<h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Mietshaus Tycoon</h1>} />
                   <p className="text-sm text-muted-fg">Die Wirtschaftssimulation rund um ein Mietshaus</p>
                 </div>
               </div>

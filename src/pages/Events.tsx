@@ -8,6 +8,7 @@ import { Badge, Button, Card, CardBody, CardHeader, DataTable, Tabs } from '@/co
 import { formatDate } from '@/utils/date';
 import { cn } from '@/utils/misc';
 import { nullProvider, ollamaProvider } from '@/ai/textProvider';
+import { GfxImage } from '@/features/graphics/Gfx';
 
 const CAT_LABEL: Record<Message['category'], string> = { tenant: 'Mieter', building: 'Gebäude', finance: 'Finanzen', event: 'Ereignis', system: 'System', contractor: 'Handwerker', goal: 'Ziele' };
 const SEV_TONE = { info: 'info', success: 'success', warning: 'warning', danger: 'danger' } as const;
@@ -43,6 +44,7 @@ export function EventsPage() {
             <Card key={d.id}>
               <CardHeader title={d.title} subtitle={`Seit ${formatDate(d.day)} · Frist ${formatDate(d.expiresDay)}`} icon={<ListChecks size={16} />} />
               <CardBody className="space-y-3">
+                <GfxImage id={`event.${d.eventId}`} fallbackId="event.generic" className="aspect-[12/5] w-full rounded-xl object-cover" />
                 <p className="text-sm leading-relaxed">{d.text}</p>
                 {d.options.map((o) => (
                   <button key={o.id} disabled={busy} onClick={() => dispatch({ type: 'resolveDecision', decisionId: d.id, optionId: o.id })} className="w-full rounded-xl border border-border p-3 text-left transition hover:border-primary hover:bg-primary/5">

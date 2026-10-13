@@ -20,6 +20,7 @@ Das Spiel läuft vollständig lokal im Browser: ohne Registrierung, ohne Backend
 - [Konfiguration & Balancing](#konfiguration--balancing)
 - [Deployment (Docker / Unraid)](#deployment-docker--unraid)
 - [Backup & Wiederherstellung](#backup--wiederherstellung)
+- [Eigene Grafiken & Texturen](#eigene-grafiken--texturen)
 - [Optionale lokale KI](#optionale-lokale-ki)
 - [Stand & Erweiterungen](#stand--erweiterungen)
 
@@ -172,6 +173,10 @@ Spielstände liegen im Browser, nicht im Container. Ein Docker-Neustart oder Upd
 - Backup: *Einstellungen → Spielstände → Exportieren* (bzw. Download-Symbol je Spielstand) – erzeugt eine JSON-Datei.
 - Wiederherstellen: *Spielstand importieren* auf dem Startbildschirm oder in den Einstellungen.
 - Exportieren Sie Spielstände vor einem Wechsel der Domain/des Ports.
+
+## Eigene Grafiken & Texturen
+
+Alle Grafiken sind optional und werden automatisch erkannt: Dateien unter `public/gfx/<Pfad>.webp|png|svg` ablegen und neu laden – fehlende werden durch die eingebauten Vektorzeichnungen ersetzt. Die vollständige Liste (144 Einträge mit Maßen, Eigenschaften, Priorität und Stilvorgaben) steht in [`docs/GRAFIKEN.md`](docs/GRAFIKEN.md); der Status ist unter *Einstellungen → Grafiken & Texturen* sichtbar. Im Docker-Betrieb lassen sich Grafiken auch per Volume nach `/usr/share/nginx/html/gfx` einbinden.
 
 ## Optionale lokale KI
 
