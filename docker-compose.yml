@@ -1,0 +1,18 @@
+services:
+  mietshaus-tycoon:
+    build: .
+    image: mietshaus-tycoon:latest
+    container_name: mietshaus-tycoon
+    restart: unless-stopped
+    environment:
+      - PORT=8080
+    ports:
+      - "${HOST_PORT:-8080}:8080"
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /etc/nginx/conf.d:uid=101,gid=101
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true

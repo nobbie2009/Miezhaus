@@ -58,7 +58,7 @@ export function AnimatedMoney({ cents, className }: { cents: number; className?:
         {formatMoney(cents)}
       </span>
       {delta && (
-        <span key={`d${delta.k}`} className={cn('num pointer-events-none absolute -top-3 right-0 animate-float-up text-[11px] font-bold', delta.v > 0 ? 'text-success' : 'text-danger')}>
+        <span key={`d${delta.k}`} className={cn('num pointer-events-none absolute right-full top-0 mr-1.5 animate-float-up text-[11px] font-bold', delta.v > 0 ? 'text-success' : 'text-danger')}>
           {delta.v > 0 ? '+' : ''}
           {formatMoney(delta.v, { decimals: false })}
         </span>

@@ -171,8 +171,8 @@ export function OverviewPage() {
                     <XAxis dataKey="p" tick={{ fontSize: 11, fill: 'hsl(var(--muted-fg))' }} />
                     <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-fg))' }} width={56} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
                     <RTooltip formatter={(v: number) => `${v.toLocaleString('de-DE')} €`} contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }} />
-                    <Area dataKey="Kontostand" stroke="hsl(var(--primary))" fill="url(#gcash)" strokeWidth={2} />
-                    <Area dataKey="Cashflow" stroke="hsl(var(--accent))" fill="transparent" strokeWidth={2} />
+                    <Area isAnimationActive={false} dataKey="Kontostand" stroke="hsl(var(--primary))" fill="url(#gcash)" strokeWidth={2} />
+                    <Area isAnimationActive={false} dataKey="Cashflow" stroke="hsl(var(--accent))" fill="transparent" strokeWidth={2} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>

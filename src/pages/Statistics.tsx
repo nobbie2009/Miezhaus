@@ -118,40 +118,40 @@ export function StatisticsPage() {
       </div>
       <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
         <ChartCard title="Einnahmen & Ausgaben" hint="Summe aller Buchungen je Zeitraum, ohne Kreditauszahlungen. Ausgaben inklusive Investitionen und Tilgung.">
-          <BarChart {...common}>{grid}{x}{y()}{tt}{lg}<Bar dataKey="Einnahmen" fill={C.s} /><Bar dataKey="Ausgaben" fill={C.d} /></BarChart>
+          <BarChart {...common}>{grid}{x}{y()}{tt}{lg}<Bar isAnimationActive={false} dataKey="Einnahmen" fill={C.s} /><Bar isAnimationActive={false} dataKey="Ausgaben" fill={C.d} /></BarChart>
         </ChartCard>
         <ChartCard title="Operativer Cashflow" hint="Einnahmen minus laufende Ausgaben (inkl. Zinsen), ohne Investitionen und Kreditbewegungen.">
-          <BarChart {...common}>{grid}{x}{y()}{tt}<Bar dataKey="Cashflow" fill={C.p} /></BarChart>
+          <BarChart {...common}>{grid}{x}{y()}{tt}<Bar isAnimationActive={false} dataKey="Cashflow" fill={C.p} /></BarChart>
         </ChartCard>
         <ChartCard title="Kontostand" hint="Kontostand zum jeweiligen Monatsende.">
-          <AreaChart {...common}>{grid}{x}{y()}{tt}<Area dataKey="Kontostand" stroke={C.p} fill={C.p} fillOpacity={0.15} strokeWidth={2} /></AreaChart>
+          <AreaChart {...common}>{grid}{x}{y()}{tt}<Area isAnimationActive={false} dataKey="Kontostand" stroke={C.p} fill={C.p} fillOpacity={0.15} strokeWidth={2} /></AreaChart>
         </ChartCard>
         <ChartCard title="Mietrückstände nach Alter" hint="Überfällige Forderungen zum Periodenende, gestaffelt nach Tagen seit Fälligkeit.">
-          <BarChart {...common}>{grid}{x}{y()}{tt}{lg}<Bar dataKey="bis 30 T." stackId="a" fill={C.w} /><Bar dataKey="31–60 T." stackId="a" fill={C.a} /><Bar dataKey="61–90 T." stackId="a" fill={C.d} /><Bar dataKey="über 90 T." stackId="a" fill="#7f1d1d" /></BarChart>
+          <BarChart {...common}>{grid}{x}{y()}{tt}{lg}<Bar isAnimationActive={false} dataKey="bis 30 T." stackId="a" fill={C.w} /><Bar isAnimationActive={false} dataKey="31–60 T." stackId="a" fill={C.a} /><Bar isAnimationActive={false} dataKey="61–90 T." stackId="a" fill={C.d} /><Bar isAnimationActive={false} dataKey="über 90 T." stackId="a" fill="#7f1d1d" /></BarChart>
         </ChartCard>
         <ChartCard title="Nettomieten: Soll & Eingang" hint="Sollmiete = vereinbarte Nettokaltmieten; Mieteingang = tatsächlich gezahlte Beträge auf Mietforderungen (inkl. NK-Anteil).">
-          <LineChart {...common}>{grid}{x}{y()}{tt}{lg}<Line dataKey="Sollmiete" stroke={C.p} strokeWidth={2} dot={false} /><Line dataKey="Mieteingang" stroke={C.s} strokeWidth={2} dot={false} /></LineChart>
+          <LineChart {...common}>{grid}{x}{y()}{tt}{lg}<Line isAnimationActive={false} dataKey="Sollmiete" stroke={C.p} strokeWidth={2} dot={false} /><Line isAnimationActive={false} dataKey="Mieteingang" stroke={C.s} strokeWidth={2} dot={false} /></LineChart>
         </ChartCard>
         <ChartCard title="Leerstand & Zufriedenheit" hint="Durchschnittliche Leerstandsquote (%) und Ø Mieterzufriedenheit (%).">
-          <LineChart {...common}>{grid}{x}{y(36)}{tt}{lg}<Line dataKey="Leerstand" stroke={C.d} strokeWidth={2} dot={false} /><Line dataKey="Zufriedenheit" stroke={C.s} strokeWidth={2} dot={false} /></LineChart>
+          <LineChart {...common}>{grid}{x}{y(36)}{tt}{lg}<Line isAnimationActive={false} dataKey="Leerstand" stroke={C.d} strokeWidth={2} dot={false} /><Line isAnimationActive={false} dataKey="Zufriedenheit" stroke={C.s} strokeWidth={2} dot={false} /></LineChart>
         </ChartCard>
         <ChartCard title="Reparaturen & Investitionen" hint="Reparatur- und Wartungskosten bzw. Renovierungs-/Modernisierungsausgaben.">
-          <BarChart {...common}>{grid}{x}{y()}{tt}{lg}<Bar dataKey="Reparaturen" fill={C.w} /><Bar dataKey="Investitionen" fill={C.i} /></BarChart>
+          <BarChart {...common}>{grid}{x}{y()}{tt}{lg}<Bar isAnimationActive={false} dataKey="Reparaturen" fill={C.w} /><Bar isAnimationActive={false} dataKey="Investitionen" fill={C.i} /></BarChart>
         </ChartCard>
         <ChartCard title="Energieverbrauch & -kosten" hint="Wärme (Heizung + Warmwasser) und Allgemeinstrom in kWh sowie Energiekosten in € (nach Einspeisevergütung).">
-          <LineChart {...common}>{grid}{x}<YAxis yAxisId="l" tick={axis} width={56} /><YAxis yAxisId="r" orientation="right" tick={axis} width={44} />{tt}{lg}<Line yAxisId="l" dataKey="kWh" stroke={C.a} strokeWidth={2} dot={false} /><Line yAxisId="r" dataKey="Energiekosten" stroke={C.d} strokeWidth={2} dot={false} /></LineChart>
+          <LineChart {...common}>{grid}{x}<YAxis yAxisId="l" tick={axis} width={56} /><YAxis yAxisId="r" orientation="right" tick={axis} width={44} />{tt}{lg}<Line isAnimationActive={false} yAxisId="l" dataKey="kWh" stroke={C.a} strokeWidth={2} dot={false} /><Line isAnimationActive={false} yAxisId="r" dataKey="Energiekosten" stroke={C.d} strokeWidth={2} dot={false} /></LineChart>
         </ChartCard>
         <ChartCard title="Immobilienwert, Eigenkapital & Kredite" hint="Geschätzter Marktwert, Eigenkapital (Wert + Konto − Schulden) und Kreditrestschuld zum Periodenende.">
-          <LineChart {...common}>{grid}{x}{y(60)}{tt}{lg}<Line dataKey="Marktwert" stroke={C.p} strokeWidth={2} dot={false} /><Line dataKey="Eigenkapital" stroke={C.s} strokeWidth={2} dot={false} /><Line dataKey="Kredite" stroke={C.d} strokeWidth={2} dot={false} /></LineChart>
+          <LineChart {...common}>{grid}{x}{y(60)}{tt}{lg}<Line isAnimationActive={false} dataKey="Marktwert" stroke={C.p} strokeWidth={2} dot={false} /><Line isAnimationActive={false} dataKey="Eigenkapital" stroke={C.s} strokeWidth={2} dot={false} /><Line isAnimationActive={false} dataKey="Kredite" stroke={C.d} strokeWidth={2} dot={false} /></LineChart>
         </ChartCard>
         <ChartCard title="Betriebskosten je m² und Monat" hint="Operative Ausgaben (ohne Investitionen und Tilgung) geteilt durch Wohnfläche und Monate.">
-          <LineChart {...common}>{grid}{x}{y(40)}{tt}<Line dataKey="Kosten/m²" stroke={C.a} strokeWidth={2} dot={false} /></LineChart>
+          <LineChart {...common}>{grid}{x}{y(40)}{tt}<Line isAnimationActive={false} dataKey="Kosten/m²" stroke={C.a} strokeWidth={2} dot={false} /></LineChart>
         </ChartCard>
         <ChartCard title="Instandhaltungsrückstand" hint="Kosten offener bekannter Schäden plus anteilige Erneuerungskosten stark verschlissener Bauteile.">
-          <AreaChart {...common}>{grid}{x}{y()}{tt}<Area dataKey="Rückstand" stroke={C.d} fill={C.d} fillOpacity={0.15} strokeWidth={2} /></AreaChart>
+          <AreaChart {...common}>{grid}{x}{y()}{tt}<Area isAnimationActive={false} dataKey="Rückstand" stroke={C.d} fill={C.d} fillOpacity={0.15} strokeWidth={2} /></AreaChart>
         </ChartCard>
         <ChartCard title="Bewertung & Gebäudezustand" hint="Gesamtbewertung (0–1000) und gewichteter Gebäudezustand (%).">
-          <LineChart {...common}>{grid}{x}<YAxis yAxisId="l" tick={axis} width={40} /><YAxis yAxisId="r" orientation="right" domain={[0, 100]} tick={axis} width={32} />{tt}{lg}<Line yAxisId="l" dataKey="Bewertung" stroke={C.p} strokeWidth={2} dot={false} /><Line yAxisId="r" dataKey="Zustand" stroke={C.w} strokeWidth={2} dot={false} /></LineChart>
+          <LineChart {...common}>{grid}{x}<YAxis yAxisId="l" tick={axis} width={40} /><YAxis yAxisId="r" orientation="right" domain={[0, 100]} tick={axis} width={32} />{tt}{lg}<Line isAnimationActive={false} yAxisId="l" dataKey="Bewertung" stroke={C.p} strokeWidth={2} dot={false} /><Line isAnimationActive={false} yAxisId="r" dataKey="Zustand" stroke={C.w} strokeWidth={2} dot={false} /></LineChart>
         </ChartCard>
       </div>
     </div>

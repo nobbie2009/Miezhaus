@@ -55,9 +55,9 @@ export function EnergyPage() {
                     <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--muted-fg))' }} width={52} />
                     <RTooltip contentStyle={tooltipStyle} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Bar dataKey="Heizung" stackId="a" fill="hsl(var(--danger))" />
-                    <Bar dataKey="Warmwasser" stackId="a" fill="hsl(var(--warning))" />
-                    <Bar dataKey="Allgemeinstrom" stackId="a" fill="hsl(var(--info))" />
+                    <Bar isAnimationActive={false} dataKey="Heizung" stackId="a" fill="hsl(var(--danger))" />
+                    <Bar isAnimationActive={false} dataKey="Warmwasser" stackId="a" fill="hsl(var(--warning))" />
+                    <Bar isAnimationActive={false} dataKey="Allgemeinstrom" stackId="a" fill="hsl(var(--info))" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -106,8 +106,8 @@ export function EnergyPage() {
                     <YAxis yAxisId="r" orientation="right" tick={{ fontSize: 11, fill: 'hsl(var(--muted-fg))' }} width={36} />
                     <RTooltip contentStyle={tooltipStyle} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Line yAxisId="l" dataKey="Kosten" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Kosten (€)" />
-                    <Line yAxisId="r" dataKey="Gradtage" stroke="hsl(var(--accent))" strokeWidth={2} dot={false} />
+                    <Line isAnimationActive={false} yAxisId="l" dataKey="Kosten" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} name="Kosten (€)" />
+                    <Line isAnimationActive={false} yAxisId="r" dataKey="Gradtage" stroke="hsl(var(--accent))" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
