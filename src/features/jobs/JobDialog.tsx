@@ -2,6 +2,7 @@ import * as React from 'react';
 import { AlertTriangle, CheckCircle2, Clock, HardHat, TrendingDown, TrendingUp } from 'lucide-react';
 import { Badge, Button, Modal, Tip } from '@/components/ui';
 import { useGame } from '@/store/gameStore';
+import { useGs } from '@/hooks/useGameState';
 import { offersFor, specFor, type JobRequest } from '@/game/jobs';
 import { forecastMeasure } from '@/game/forecast';
 import { formatDate } from '@/utils/date';
@@ -13,7 +14,7 @@ import { Money, Stars, URGENCY_LABEL, URGENCY_TONE } from '../common';
  * Angebotsvergleich und Kosten-/Nutzenprognose vor der Beauftragung.
  */
 export function JobDialog({ request, open, onOpenChange }: { request: JobRequest | null; open: boolean; onOpenChange: (v: boolean) => void }) {
-  const s = useGame((x) => x.game)!;
+  const s = useGs();
   const dispatch = useGame((x) => x.dispatch);
   const busy = useGame((x) => x.busy);
   const [chosen, setChosen] = React.useState<string | null>(null);

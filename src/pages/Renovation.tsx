@@ -30,7 +30,7 @@ export function RenovationPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusId]);
-  const apt = s.apartments.find((a) => a.id === aptId)!;
+  const apt = s.apartments.find((a) => a.id === aptId) ?? s.apartments.find((a) => a.id === initialApt)!;
   const list = MEASURES.filter((m) => m.scope === scope && (cat === 'all' || m.category === cat));
   const subsidy = activeSubsidyRate(s);
   const active = s.jobs.filter((j) => (j.kind === 'renovation' || j.kind === 'modernization') && (j.status === 'scheduled' || j.status === 'in_progress'));
@@ -43,7 +43,7 @@ export function RenovationPage() {
         {scope === 'apartment' && (
           <Select
             className="h-9 w-72"
-            value={aptId}
+            value={apt.id}
             onChange={setAptId}
             aria-label="Wohnung wählen"
             options={s.apartments.map((a) => ({ value: a.id, label: `Whg. ${a.number} – ${STATUS_LABEL[a.status]} (${Math.round(a.condition)} %)` }))}

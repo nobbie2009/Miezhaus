@@ -1,3 +1,4 @@
+import { rootOf, viewById } from './portfolio';
 import type { GameState } from '@/domain/schema';
 import { MEASURE_BY_ID } from '@/content/measures';
 import { CONFIG } from './config';
@@ -56,7 +57,8 @@ export function forecastMeasure(s: GameState, req: JobRequest, contractorId?: st
   const offer = offers.find((o) => o.contractorId === contractorId) ?? offers[0];
   if (!offer) return { error: 'Kein Dienstleister verfügbar.' };
   const before = metrics(s);
-  const sim: GameState = structuredClone(s);
+  // Objekt-Sichten (Proxy) sind nicht klonbar: Wurzel kopieren und dieselbe Sicht in der Kopie öffnen
+  const sim: GameState = viewById(structuredClone(rootOf(s)), s.building.id);
   if (req.kind === 'measure') {
     const m = MEASURE_BY_ID[req.measureId];
     const apt = req.apartmentId ? sim.apartments.find((a) => a.id === req.apartmentId) : undefined;

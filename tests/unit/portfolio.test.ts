@@ -8,6 +8,8 @@ import { advanceDays } from '@/game/simulation';
 import { autoSpentThisMonth } from '@/game/automation';
 import { Rng } from '@/utils/rng';
 import { euro } from '@/utils/money';
+import { forecastMeasure, } from '@/game/forecast';
+import { offersFor, specFor } from '@/game/jobs';
 import { exportSave, importSave, validateState } from '@/persistence/saveFile';
 
 function richGame(seed = 5) {
@@ -69,6 +71,26 @@ describe('Portfolio', () => {
     expect(sold.ok).toBe(true);
     expect(s.properties).toHaveLength(0);
     expect(ledgerBalance(s)).toBe(s.cash);
+  });
+});
+
+describe('Maßnahmen im zweiten Objekt', () => {
+  it('Prognose und Beauftragung einer Renovierung funktionieren in einer Objekt-Sicht', () => {
+    const s = richGame(21);
+    const prop = generateProperty(s, new Rng(s));
+    s.properties.push(prop);
+    const v = propertyView(s, prop);
+    const apt = prop.apartments.find((a) => a.condition < 88)!;
+    const req = { kind: 'measure' as const, measureId: 'apt_paint', apartmentId: apt.id };
+    const f = forecastMeasure(v, req);
+    expect('error' in f).toBe(false);
+    const spec = specFor(v, req);
+    if ('error' in spec) throw new Error(spec.error);
+    const offer = offersFor(v, spec)[0];
+    const r = applyAction(v, { type: 'createJob', request: req, contractorId: offer.contractorId });
+    expect(r.ok).toBe(true);
+    expect(prop.jobs).toHaveLength(1);
+    expect(s.jobs).toHaveLength(0);
   });
 });
 

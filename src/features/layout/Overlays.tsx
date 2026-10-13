@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { AlertOctagon, CheckCircle2, Info, PartyPopper, Search, TriangleAlert, X, GraduationCap } from 'lucide-react';
 import { useGame } from '@/store/gameStore';
+import { useGs } from '@/hooks/useGameState';
 import { useUi, type PageId } from '@/store/uiStore';
 import { Badge, Button, Modal } from '@/components/ui';
 import { DEFECT_TYPES } from '@/content/defects';
@@ -126,7 +127,7 @@ interface SearchHit {
 }
 
 export function SearchPalette() {
-  const s = useGame((x) => x.game)!;
+  const s = useGs();
   const { searchOpen, setSearch, navigate } = useUi();
   const [q, setQ] = React.useState('');
   const [idx, setIdx] = React.useState(0);

@@ -68,6 +68,7 @@ function GameShell() {
   const page = useUi((x) => x.page);
   const s = useGame((x) => x.game)!;
   const navigate = useUi((x) => x.navigate);
+  const propertyId = useUi((x) => x.activePropertyId);
   useGameLoop();
   const item = NAV.find((n) => n.id === page);
   const locked = item?.locked?.(s);
@@ -88,7 +89,8 @@ function GameShell() {
             <h1 className="mb-4 text-xl font-bold tracking-tight">{PAGE_LABEL[page]}</h1>
             <ErrorBoundary resetKey={page}>
               <div key={page} className="animate-fade-in">
-                <Page />
+                {/* Beim Objektwechsel neu aufbauen, damit keine Auswahl aus dem anderen Haus hängen bleibt */}
+                <Page key={propertyId ?? 'main'} />
               </div>
             </ErrorBoundary>
           </main>
