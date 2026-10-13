@@ -31,6 +31,8 @@ export interface EventDef {
   cooldownDays: number;
   /** Unabhängig von der eingestellten Ereignishäufigkeit (z. B. Folge eines Zustands). */
   stateDriven?: boolean;
+  /** Marktweite Ereignisse werden nur einmal (nicht je Objekt) ausgewürfelt. */
+  global?: boolean;
   chance: (s: GameState) => number;
   fire: (s: GameState, rng: Rng) => boolean;
   resolve?: (s: GameState, d: Decision, optionId: string, rng: Rng) => string;
@@ -143,6 +145,7 @@ export const EVENTS: EventDef[] = [
   },
   {
     id: 'energy_price_shock',
+    global: true,
     title: 'Energiepreise steigen',
     category: 'market',
     cooldownDays: 900,
@@ -172,6 +175,7 @@ export const EVENTS: EventDef[] = [
   },
   {
     id: 'material_price_rise',
+    global: true,
     title: 'Baupreise steigen',
     category: 'market',
     cooldownDays: 300,
@@ -185,6 +189,7 @@ export const EVENTS: EventDef[] = [
   },
   {
     id: 'new_contractor',
+    global: true,
     title: 'Neuer Dienstleister',
     category: 'contractor',
     cooldownDays: 200,
@@ -198,6 +203,7 @@ export const EVENTS: EventDef[] = [
   },
   {
     id: 'subsidy_program',
+    global: true,
     title: 'Förderprogramm',
     category: 'finance',
     cooldownDays: 500,
@@ -550,6 +556,7 @@ export const EVENTS: EventDef[] = [
   },
   {
     id: 'bridge_loan',
+    global: true,
     title: 'Überbrückungskredit',
     category: 'finance',
     cooldownDays: 120,
@@ -652,6 +659,7 @@ export const EVENTS: EventDef[] = [
   },
   {
     id: 'investor_inquiry',
+    global: true,
     title: 'Kaufinteresse',
     category: 'market',
     cooldownDays: 720,
@@ -665,6 +673,7 @@ export const EVENTS: EventDef[] = [
   },
   {
     id: 'press_praise',
+    global: true,
     title: 'Lokalpresse',
     category: 'community',
     cooldownDays: 365,

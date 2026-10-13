@@ -3,6 +3,8 @@ import { ClipboardList, HardHat, Wrench, XCircle } from 'lucide-react';
 import type { ComponentKey, Job } from '@/domain/schema';
 import { useDispatch, useGs } from '@/hooks/useGameState';
 import { useUi } from '@/store/uiStore';
+import { useGame } from '@/store/gameStore';
+import { STRATEGY_LABEL, automationChannel } from '@/game/automation';
 import { Badge, Button, Card, CardBody, CardHeader, Confirm, DataTable, Progress, Tabs, Tip } from '@/components/ui';
 import { DEFECT_TYPES } from '@/content/defects';
 import { COMPONENTS, COMPONENT_ORDER } from '@/content/components';
@@ -32,6 +34,8 @@ export function RepairsPage() {
   const open = s.defects.filter((d) => d.resolvedDay === null && d.discovered && (sev === 'all' || d.severity >= Number(sev)));
   const active = s.jobs.filter((j) => j.status === 'scheduled' || j.status === 'in_progress');
   const done = s.jobs.filter((j) => j.status === 'done' || j.status === 'cancelled').reverse();
+  const busy = useGame((x) => x.busy);
+  const unassigned = open.filter((d) => !d.jobId || !active.some((j) => j.id === d.jobId)).length;
 
   return (
     <div className="space-y-4">
@@ -47,7 +51,22 @@ export function RepairsPage() {
       />
       {tab === 'open' && (
         <Card>
-          <CardHeader title="Gemeldete & entdeckte Schäden" icon={<Wrench size={16} />} subtitle="Unentdeckte Mängel erscheinen erst nach Meldung, Wartung oder Inspektion" actions={<Tabs value={sev} onChange={setSev} items={[{ id: 'all', label: 'Alle' }, { id: '2', label: 'Erheblich+' }, { id: '3', label: 'Kritisch' }]} />} />
+          <CardHeader title="Gemeldete & entdeckte Schäden" icon={<Wrench size={16} />} subtitle="Unentdeckte Mängel erscheinen erst nach Meldung, Wartung oder Inspektion" actions={
+              <div className="flex flex-wrap items-center gap-2">
+                <Tabs value={sev} onChange={setSev} items={[{ id: 'all', label: 'Alle' }, { id: '2', label: 'Erheblich+' }, { id: '3', label: 'Kritisch' }]} />
+                <Tip content={`Vergibt für jeden offenen Schaden einen Auftrag nach Ihrer Strategie „${STRATEGY_LABEL[s.automation.strategy]}“ (änderbar unter Personal & Dienstleister).`}>
+                  <Button size="sm" disabled={busy || unassigned === 0} onClick={() => dispatch({ type: 'repairAll', minSeverity: sev === 'all' ? undefined : Number(sev) })} data-testid="repair-all">
+                    <HardHat size={14} /> Alle beauftragen ({unassigned})
+                  </Button>
+                </Tip>
+              </div>
+            }
+          />
+          {!automationChannel(s) && (
+            <div className="mx-4 mb-2 rounded-lg border border-primary/30 bg-primary/5 p-2.5 text-xs">
+              Tipp: Mit der <strong>Mieter-App</strong> (Personal & Dienstleister) melden Mieter Schäden per Foto und beauftragen Handwerker nach Ihren Regeln selbst – Sie müssen sich nur noch um größere Aufträge kümmern.
+            </div>
+          )}
           <DataTable
             rows={open}
             rowKey={(d) => d.id}

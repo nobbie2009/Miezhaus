@@ -27,6 +27,7 @@ export function post(s: GameState, input: PostInput): LedgerEntry {
     purpose: input.purpose,
     status: 'posted',
     ref: input.ref ?? null,
+    propertyId: s.building.id,
   };
   s.ledger.push(entry);
   s.cash += input.amount;
@@ -49,12 +50,15 @@ export const INCOME_CATEGORIES: LedgerCategory[] = [
   'loan_disbursement',
   'other_income',
   'feed_in',
+  'property_sale',
+  'investment_withdrawal',
+  'investment_income',
 ];
 
 /** Investitionen (nicht operativ). */
-export const INVESTMENT_CATEGORIES: LedgerCategory[] = ['renovation', 'modernization'];
+export const INVESTMENT_CATEGORIES: LedgerCategory[] = ['renovation', 'modernization', 'property_purchase', 'purchase_costs', 'property_sale'];
 /** Finanzierung. */
-export const FINANCING_CATEGORIES: LedgerCategory[] = ['loan_disbursement', 'loan_principal'];
+export const FINANCING_CATEGORIES: LedgerCategory[] = ['loan_disbursement', 'loan_principal', 'investment_deposit', 'investment_withdrawal'];
 
 export const CATEGORY_LABEL: Record<LedgerCategory, string> = {
   rent: 'Nettomiete',
@@ -90,6 +94,13 @@ export const CATEGORY_LABEL: Record<LedgerCategory, string> = {
   damage: 'Schadensbeseitigung',
   utility_refund: 'NK-Guthaben an Mieter',
   other_expense: 'Sonstige Ausgaben',
+  property_purchase: 'Immobilienkauf',
+  purchase_costs: 'Erwerbsnebenkosten',
+  property_sale: 'Immobilienverkauf',
+  investment_deposit: 'Einzahlung Geldanlage',
+  investment_withdrawal: 'Auszahlung Geldanlage',
+  investment_income: 'Zinsen & Erträge',
+  capital_gains_tax: 'Abgeltung-/Spekulationssteuer',
 };
 
 export const isIncome = (c: LedgerCategory) => INCOME_CATEGORIES.includes(c);

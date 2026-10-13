@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
-import { createGame } from '@/game/create';
+import { SCHEMA_VERSION, createGame } from '@/game/create';
 import { advanceDays } from '@/game/simulation';
 import { exportSave, importSave, validateState } from '@/persistence/saveFile';
 import { deleteSave, duplicateSave, listSaves, loadSave, saveGame } from '@/persistence/db';
@@ -45,7 +45,7 @@ describe('Speichern & Laden', () => {
     delete old.insuranceClaims;
     const r = validateState(old);
     expect(r.ok).toBe(true);
-    expect(r.state!.schemaVersion).toBe(1);
+    expect(r.state!.schemaVersion).toBe(SCHEMA_VERSION);
     const future = { ...structuredClone(s), schemaVersion: 99 };
     expect(validateState(future).ok).toBe(false);
   });

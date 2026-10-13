@@ -4,12 +4,14 @@ import type { Rng } from '@/utils/rng';
 import { formatMoney } from '@/utils/money';
 import { addMessage, log } from './messages';
 import { post } from './ledger';
+import { viewById } from './portfolio';
 
 /** Tägliche Ereignisprüfung. Ereignisse feuern nur, wenn ihre Voraussetzungen im Spielzustand erfüllt sind. */
-export function rollEvents(s: GameState, rng: Rng) {
+export function rollEvents(s: GameState, rng: Rng, isMain = true) {
   const freq = s.settings.eventFrequency;
   let decisionsToday = 0;
   for (const ev of EVENTS) {
+    if (ev.global && !isMain) continue;
     const last = s.eventCooldowns[ev.id];
     if (last !== undefined && s.day - last < ev.cooldownDays) continue;
     const p = ev.chance(s) * (ev.stateDriven ? Math.max(0.5, Math.min(1.5, freq)) : freq);
@@ -38,7 +40,8 @@ export function resolveDecision(s: GameState, decisionId: string, optionId: stri
   if (!d.options.some((o) => o.id === optionId)) return { ok: false, error: 'Ungültige Option.' };
   const ev = EVENT_BY_ID[d.eventId];
   s.decisions = s.decisions.filter((x) => x.id !== decisionId);
-  const result = ev?.resolve ? ev.resolve(s, d, optionId, rng) : 'Erledigt.';
+  const view = viewById(s, typeof d.context.propertyId === 'string' ? d.context.propertyId : null);
+  const result = ev?.resolve ? ev.resolve(view, d, optionId, rng) : 'Erledigt.';
   const label = d.options.find((o) => o.id === optionId)?.label ?? optionId;
   addMessage(s, { category: 'event', title: d.title, text: `Entscheidung: ${label}. ${result}` });
   log(s, `Entscheidung „${d.title}“: ${label}`, 'decision');

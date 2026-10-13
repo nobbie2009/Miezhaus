@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Bell, CheckCheck, History, Inbox, ListChecks } from 'lucide-react';
 import type { Message } from '@/domain/schema';
-import { useDispatch, useGs } from '@/hooks/useGameState';
+import { useDispatch, useGs, useRoot } from '@/hooks/useGameState';
 import { useUi } from '@/store/uiStore';
 import { useGame } from '@/store/gameStore';
 import { Badge, Button, Card, CardBody, CardHeader, DataTable, Tabs } from '@/components/ui';
@@ -18,6 +18,8 @@ export function EventsPage() {
   const dispatch = useDispatch();
   const busy = useGame((x) => x.busy);
   const navigate = useUi((x) => x.navigate);
+  const setProperty = useUi((x) => x.setProperty);
+  const root = useRoot();
   const [tab, setTab] = React.useState<'inbox' | 'decisions' | 'log'>(s.decisions.length ? 'decisions' : 'inbox');
   const [cat, setCat] = React.useState<'all' | Message['category'] | 'unread'>('all');
   const msgs = [...s.messages].reverse().filter((m) => (cat === 'all' ? true : cat === 'unread' ? !m.read : m.category === cat));
@@ -93,7 +95,11 @@ export function EventsPage() {
                   setOpenId(openId === m.id ? null : m.id);
                   if (!m.read) dispatch({ type: 'markRead', messageId: m.id });
                 }}
-                onLink={() => m.link && navigate(m.link.page, m.link.id)}
+                onLink={() => {
+                  if (!m.link) return;
+                  if (m.propertyId && m.link.page !== 'portfolio' && m.link.page !== 'finance') setProperty(m.propertyId === root.building.id ? null : m.propertyId);
+                  navigate(m.link.page, m.link.id);
+                }}
               />
             ))}
           </div>

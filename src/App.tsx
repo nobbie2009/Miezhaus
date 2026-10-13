@@ -22,9 +22,11 @@ import { EventsPage } from '@/pages/Events';
 import { StatisticsPage } from '@/pages/Statistics';
 import { GoalsPage } from '@/pages/Goals';
 import { SettingsPage } from '@/pages/Settings';
+import { PortfolioPage } from '@/pages/Portfolio';
 import { useGfxStore } from '@/features/graphics/useGraphics';
 
 const PAGES: Record<PageId, React.ComponentType> = {
+  portfolio: PortfolioPage,
   overview: OverviewPage,
   building: BuildingPage,
   apartments: ApartmentsPage,

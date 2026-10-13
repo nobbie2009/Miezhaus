@@ -4,6 +4,8 @@ import { applyAction, UNDOABLE, ACTION_LABEL, type ActionResult, type GameAction
 import { advanceDays, type StopReason } from '@/game/simulation';
 import { createGame, type NewGameOptions } from '@/game/create';
 import { saveGame } from '@/persistence/db';
+import { viewById } from '@/game/portfolio';
+import { useUi } from './uiStore';
 
 export type Speed = 'paused' | 'slow' | 'normal' | 'fast' | 'turbo';
 
@@ -43,7 +45,7 @@ interface Store {
 let toastId = 0;
 
 /** Aktionen, nach denen automatisch gespeichert wird. */
-const AUTOSAVE_ACTIONS: GameAction['type'][] = ['createJob', 'offerLease', 'takeLoan', 'repayLoan', 'resolveDecision', 'rentIncrease', 'terminateArrears', 'mutualTermination', 'writeOff', 'setService'];
+const AUTOSAVE_ACTIONS: GameAction['type'][] = ['buyProperty', 'sellProperty', 'invest', 'withdrawInvestment', 'repairAll', 'createJob', 'offerLease', 'takeLoan', 'repayLoan', 'resolveDecision', 'rentIncrease', 'terminateArrears', 'mutualTermination', 'writeOff', 'setService'];
 
 export const useGame = create<Store>((set, get) => ({
   game: null,
@@ -57,10 +59,14 @@ export const useGame = create<Store>((set, get) => ({
 
   newGame: (opts) => {
     const g = createGame(opts);
+    useUi.getState().setProperty(null);
     set({ game: g, speed: 'paused', undo: null, dirty: true });
     void get().save('auto');
   },
-  loadGame: (s) => set({ game: s, speed: 'paused', undo: null, dirty: false }),
+  loadGame: (s) => {
+    useUi.getState().setProperty(null);
+    set({ game: s, speed: 'paused', undo: null, dirty: false });
+  },
   closeGame: () => set({ game: null, speed: 'paused', undo: null }),
 
   dispatch: (a) => {
@@ -71,7 +77,8 @@ export const useGame = create<Store>((set, get) => ({
     set({ busy: true });
     try {
       const draft = structuredClone(game);
-      const res = applyAction(draft, a);
+      // Aktionen wirken auf das in der Objektauswahl gewählte Haus
+      const res = applyAction(viewById(draft, useUi.getState().activePropertyId), a);
       if (!res.ok) {
         if (res.error) get().toast('error', res.error);
         return res;

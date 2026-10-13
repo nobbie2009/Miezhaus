@@ -276,7 +276,7 @@ export function computeSatisfaction(s: GameState, t: Tenant): SatisfactionResult
   f.Bedürfnisse = t.needs.reduce((acc, n) => acc + needSatisfied(s, t, a, n), 0);
   f.Gemeinschaft = (b.amenities.includes('community_room') ? 3 : 0) * (tr.community / 100) + (b.amenities.includes('garden') ? 1 : 0);
   const svc = s.services;
-  f.Service = (svc.caretaker === 'fulltime' ? 5 : svc.caretaker === 'parttime' ? 3 : 0) + (svc.management === 'agency' ? 2 : svc.management === 'software' ? 1 : 0) - (svc.cleaning === 'none' ? 1 : 0);
+  f.Service = (svc.caretaker === 'fulltime' ? 5 : svc.caretaker === 'parttime' ? 3 : 0) + (svc.management === 'agency' ? 2 : svc.management === 'software' ? 1 : 0) + (svc.tenantApp ? 1.5 * (0.5 + tr.communicativeness / 100) : 0) - (svc.cleaning === 'none' ? 1 : 0);
   f.Stimmung = t.moods.filter((m) => m.untilDay >= s.day).reduce((acc, m) => acc + m.value, 0);
   const target = clamp(CONFIG.satisfaction.base + Object.values(f).reduce((x, y) => x + y, 0));
   for (const k of Object.keys(f)) f[k] = Math.round(f[k] * 10) / 10 + 0;
@@ -321,7 +321,8 @@ function reportDefects(s: GameState, t: Tenant, a: Apartment, rng: Rng) {
     if (d.discovered || d.resolvedDay !== null) continue;
     const def = DEFECT_TYPES[d.type];
     if (d.target.kind === 'apartment' && d.target.apartmentId === a.id) {
-      const p = 0.06 + (t.traits.communicativeness / 100) * 0.35 + (d.severity - 1) * 0.2;
+      // Mit Mieter-App melden auch zurückhaltende Mieter Schäden schneller (Foto + zwei Klicks)
+      const p = (0.06 + (t.traits.communicativeness / 100) * 0.35 + (d.severity - 1) * 0.2) * (s.services.tenantApp ? 1.6 : 1) + (s.services.tenantApp ? 0.05 : 0);
       if (!rng.chance(p)) continue;
       if (def.diyFixable && rng.chance((t.traits.diy / 100) * 0.45)) {
         d.discovered = true;

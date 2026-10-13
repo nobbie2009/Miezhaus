@@ -102,6 +102,10 @@ export const CONFIG = {
     maintenancePlan: euro(89),
     winterService: euro(45),
     caretakerAllocatableShare: 0.7,
+    tenantAppBase: euro(29),
+    tenantAppPerUnit: euro(2),
+    frameworkContractFee: euro(25),
+    frameworkDiscount: 0.07,
   },
   finance: {
     overdraftInterest: 0.115,
@@ -111,6 +115,41 @@ export const CONFIG = {
     loanRiskPremium: 0.025,
     emergencyLoanRate: 0.095,
     earlyRepaymentFee: 0.01,
+  },
+  automation: {
+    /** Provision des Vermietungsservice in Nettokaltmieten (ohne Hausverwaltung). */
+    lettingFeeRents: 2,
+  },
+  investments: {
+    /** Abgeltungsteuer inkl. Solidaritätszuschlag */
+    capitalGainsTax: 0.26375,
+    /** Sparer-Pauschbetrag pro Jahr */
+    allowance: euro(1000),
+    /** Teilfreistellung für Aktien-ETF */
+    etfPartialExemption: 0.3,
+    etfOrderFee: euro(5),
+    etfMonthlyMean: 0.0055,
+    etfMonthlySd: 0.042,
+    savingsSpread: 0.012,
+    savingsMinRate: 0.004,
+    /** Festgeld-Aufschlag pro Laufzeitjahr */
+    fixedPremiumPerYear: 0.0015,
+  },
+  realEstate: {
+    /** Grunderwerbsteuer */
+    transferTax: 0.06,
+    /** Notar und Grundbuch */
+    notary: 0.02,
+    /** Maklercourtage Käuferanteil */
+    broker: 0.0357,
+    surveyBase: euro(1400),
+    surveyRate: 0.0008,
+    /** Spekulationsfrist in Tagen (10 Jahre) */
+    speculationDays: 3650,
+    saleCosts: 0.015,
+    offerIntervalDays: [45, 110] as const,
+    offerLifetimeDays: 75,
+    maxOffers: 3,
   },
   valuation: {
     rentMultiplier: 19,

@@ -1,5 +1,6 @@
-import type { GameSettings, GameState, Services } from '@/domain/schema';
+import { AutomationSchema, type Automation, type GameSettings, type GameState, type Investment, type Services } from '@/domain/schema';
 import { formatMoney } from '@/utils/money';
+import { CONFIG } from './config';
 import { Rng } from '@/utils/rng';
 import { listApartment, offerLease, unlistApartment } from './applicants';
 import { agreePaymentPlan, announceRentIncrease, offerMutualTermination, terminateForArrears } from './contracts';
@@ -10,6 +11,9 @@ import { cancelJob, createJob, type JobRequest } from './jobs';
 import { log } from './messages';
 import { dun, writeOff } from './payments';
 import { hasUnlock } from './progression';
+import { repairAll } from './automation';
+import { deposit, withdraw } from './investments';
+import { buyProperty, sellProperty, surveyOffer } from './realestate';
 
 /**
  * Alle Spieleraktionen laufen über diese validierten Befehle.
@@ -37,7 +41,16 @@ export type GameAction =
   | { type: 'setSetting'; key: keyof GameSettings; value: GameSettings[keyof GameSettings] }
   | { type: 'setTutorialStep'; step: number }
   | { type: 'continueEndless' }
-  | { type: 'renameSave'; name: string };
+  | { type: 'renameSave'; name: string }
+  | { type: 'setAutomation'; patch: Partial<Automation> }
+  | { type: 'toggleFramework'; contractorId: string }
+  | { type: 'repairAll'; minSeverity?: number }
+  | { type: 'invest'; kind: Investment['kind']; amount: number; years?: number }
+  | { type: 'withdrawInvestment'; investmentId: string; amount: number | 'all' }
+  | { type: 'surveyOffer'; offerId: string }
+  | { type: 'buyProperty'; offerId: string; price?: number; loanAmount: number; loanYears: number }
+  | { type: 'sellProperty'; buildingId: string }
+  | { type: 'renameProperty'; name: string };
 
 export interface ActionResult {
   ok: boolean;
@@ -46,7 +59,7 @@ export interface ActionResult {
 }
 
 /** Aktionen, die sich (am selben Spieltag) rückgängig machen lassen. */
-export const UNDOABLE: GameAction['type'][] = ['listApartment', 'unlistApartment', 'rejectApplicant', 'setService', 'cancelJob', 'paymentPlan'];
+export const UNDOABLE: GameAction['type'][] = ['listApartment', 'unlistApartment', 'rejectApplicant', 'setService', 'cancelJob', 'paymentPlan', 'setAutomation', 'toggleFramework'];
 
 export const ACTION_LABEL: Partial<Record<GameAction['type'], string>> = {
   listApartment: 'Inserat',
@@ -55,6 +68,8 @@ export const ACTION_LABEL: Partial<Record<GameAction['type'], string>> = {
   setService: 'Dienstleistung geändert',
   cancelJob: 'Auftrag storniert',
   paymentPlan: 'Ratenzahlung',
+  setAutomation: 'Automatik-Regeln',
+  toggleFramework: 'Rahmenvertrag',
 };
 
 const SERVICE_UNLOCK: Partial<Record<string, string>> = {
@@ -175,6 +190,39 @@ export function applyAction(s: GameState, a: GameAction): ActionResult {
       return { ok: true, message: 'Weiter im Endlosmodus.' };
     case 'renameSave':
       s.saveName = a.name.slice(0, 60) || s.saveName;
+      return { ok: true };
+    case 'setAutomation': {
+      const next = AutomationSchema.safeParse({ ...s.automation, ...a.patch });
+      if (!next.success) return { ok: false, error: 'Ungültige Automatik-Einstellung.' };
+      s.automation = next.data;
+      return { ok: true };
+    }
+    case 'toggleFramework': {
+      const c = s.contractors.find((x) => x.id === a.contractorId);
+      if (!c) return { ok: false, error: 'Dienstleister nicht gefunden.' };
+      const has = s.automation.frameworkContracts.includes(c.id);
+      if (!has && c.reliability < 60) return { ok: false, error: `${c.name} ist zu unzuverlässig für einen Rahmenvertrag.` };
+      s.automation.frameworkContracts = has ? s.automation.frameworkContracts.filter((x) => x !== c.id) : [...s.automation.frameworkContracts, c.id];
+      log(s, has ? `Rahmenvertrag mit ${c.name} gekündigt.` : `Rahmenvertrag mit ${c.name} geschlossen.`, 'service');
+      return { ok: true, message: has ? `Rahmenvertrag mit ${c.name} beendet.` : `Rahmenvertrag mit ${c.name}: ${Math.round(CONFIG.costs.frameworkDiscount * 100)} % Rabatt, bevorzugte Termine, ${formatMoney(CONFIG.costs.frameworkContractFee)}/Monat.` };
+    }
+    case 'repairAll': {
+      const r = repairAll(s, { maxSeverityOnly: a.minSeverity });
+      if (!r.ok) return { ok: false, error: r.error };
+      return { ok: true, message: `${r.count} Aufträge für zusammen ${formatMoney(r.total)} vergeben${r.skipped ? `, ${r.skipped} übersprungen (Liquidität/kein Anbieter)` : ''}.` };
+    }
+    case 'invest':
+      return deposit(s, a.kind, Math.round(a.amount), a.years);
+    case 'withdrawInvestment':
+      return withdraw(s, a.investmentId, a.amount);
+    case 'surveyOffer':
+      return surveyOffer(s, a.offerId);
+    case 'buyProperty':
+      return buyProperty(s, { offerId: a.offerId, price: a.price, loanAmount: a.loanAmount, loanYears: a.loanYears }, rng);
+    case 'sellProperty':
+      return sellProperty(s, a.buildingId);
+    case 'renameProperty':
+      s.building.name = a.name.trim().slice(0, 40) || s.building.name;
       return { ok: true };
   }
 }

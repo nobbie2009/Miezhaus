@@ -1,5 +1,5 @@
 import { GameStateSchema, type GameState } from '@/domain/schema';
-import { SCHEMA_VERSION } from '@/game/create';
+import { SCHEMA_VERSION, defaultAutomation } from '@/game/create';
 import { ledgerBalance } from '@/game/ledger';
 
 export const SAVE_FORMAT = 'mietshaus-tycoon-save';
@@ -21,6 +21,32 @@ type Migration = (raw: Record<string, unknown>) => Record<string, unknown>;
  */
 export const MIGRATIONS: Record<number, Migration> = {
   0: (raw) => ({ ...raw, schemaVersion: 1, insuranceClaims: raw.insuranceClaims ?? [], log: raw.log ?? [] }),
+  // v2: Portfolio, Geldanlagen, Automatik, Mieter-App, Lagefaktor
+  1: (raw) => {
+    const building = { ...(raw.building as Record<string, unknown>) };
+    if (typeof building.locationFactor !== 'number') building.locationFactor = 1;
+    const services = { tenantApp: false, ...(raw.services as Record<string, unknown>) };
+    const id = (building.id as string) ?? 'b1';
+    const ledger = ((raw.ledger as Record<string, unknown>[]) ?? []).map((e) => ('propertyId' in e ? e : { ...e, propertyId: id }));
+    const messages = ((raw.messages as Record<string, unknown>[]) ?? []).map((m) => ('propertyId' in m ? m : { ...m, propertyId: id }));
+    const unlocks = [...((raw.unlocks as string[]) ?? [])];
+    if (typeof raw.phase === 'number' && raw.phase >= 3 && !unlocks.includes('portfolio')) unlocks.push('portfolio');
+    return {
+      ...raw,
+      schemaVersion: 2,
+      building,
+      services,
+      ledger,
+      messages,
+      unlocks,
+      properties: raw.properties ?? [],
+      propertyMarket: raw.propertyMarket ?? [],
+      investments: raw.investments ?? [],
+      automation: raw.automation ?? { ...defaultAutomation(), autoRepair: false },
+      purchaseDay: raw.purchaseDay ?? raw.startDay ?? 0,
+      purchasePrice: raw.purchasePrice ?? 0,
+    };
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): Record<string, unknown> {
@@ -60,14 +86,21 @@ export function validateState(raw: unknown): ValidationResult {
   }
   const s = parsed.data;
   const errors: string[] = [];
-  // Referenzielle Integrität
-  const aptIds = new Set(s.apartments.map((a) => a.id));
-  const tenantIds = new Set(s.tenants.map((t) => t.id));
-  for (const c of s.contracts) {
-    if (!aptIds.has(c.apartmentId)) errors.push(`Vertrag ${c.id} verweist auf unbekannte Wohnung.`);
-    if (!tenantIds.has(c.tenantId)) errors.push(`Vertrag ${c.id} verweist auf unbekannten Mieter.`);
+  // Referenzielle Integrität – je Objekt im Portfolio
+  const buildingIds = new Set<string>();
+  for (const p of [s, ...s.properties]) {
+    if (buildingIds.has(p.building.id)) errors.push(`Doppelte Objekt-ID ${p.building.id}.`);
+    buildingIds.add(p.building.id);
+    const aptIds = new Set(p.apartments.map((a) => a.id));
+    const tenantIds = new Set(p.tenants.map((t) => t.id));
+    for (const c of p.contracts) {
+      if (!aptIds.has(c.apartmentId)) errors.push(`Vertrag ${c.id} verweist auf unbekannte Wohnung.`);
+      if (!tenantIds.has(c.tenantId)) errors.push(`Vertrag ${c.id} verweist auf unbekannten Mieter.`);
+    }
+    for (const a of p.apartments) if (a.tenantId && !tenantIds.has(a.tenantId)) errors.push(`Wohnung ${a.number} (${p.building.name}) verweist auf unbekannten Mieter.`);
   }
-  for (const a of s.apartments) if (a.tenantId && !tenantIds.has(a.tenantId)) errors.push(`Wohnung ${a.number} verweist auf unbekannten Mieter.`);
+  const contractorIds = new Set(s.contractors.map((c) => c.id));
+  s.automation.frameworkContracts = s.automation.frameworkContracts.filter((id) => contractorIds.has(id));
   const ids = new Set<string>();
   for (const e of s.ledger) {
     if (ids.has(e.id)) errors.push(`Doppelte Buchungs-ID ${e.id}.`);

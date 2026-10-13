@@ -70,3 +70,20 @@ test('Import eines beschädigten Spielstands wird abgelehnt', async ({ page }) =
   await page.getByTestId('import-input').setInputFiles({ name: 'kaputt.json', mimeType: 'application/json', buffer: Buffer.from('{"format":"mietshaus-tycoon-save","formatVersion":1,"game":{"cash":"x"}}') });
   await expect(page.getByText(/Import fehlgeschlagen/)).toBeVisible();
 });
+
+test('Mieter-App, Alle beauftragen und Geldanlage', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await startGame(page);
+  await nav(page, 'Personal');
+  await page.getByRole('button', { name: /Mieter-App/ }).click();
+  await expect(page.locator('span', { hasText: 'Mieter-App aktiv' })).toBeVisible();
+  await nav(page, 'Reparaturen');
+  await page.getByTestId('repair-all').click();
+  await expect(page.getByText(/Aufträge für zusammen/)).toBeVisible();
+  await nav(page, 'Vermögen');
+  await page.getByRole('tab', { name: 'Geldanlagen' }).click();
+  await page.getByRole('button', { name: 'Anlegen' }).click();
+  await expect(page.getByText(/Tagesgeldkonto überwiesen/)).toBeVisible();
+  expect(errors).toEqual([]);
+});

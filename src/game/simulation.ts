@@ -7,7 +7,11 @@ import { applyPendingIncreases } from './contracts';
 import { escalateDefects } from './defects';
 import { accumulateEnergy } from './energy';
 import { expireDecisions, rollEvents } from './events';
-import { annualTax, checkInsolvency, postMonthlyCosts, trackNegativeCash } from './finance';
+import { annualTax, checkInsolvency, postGlobalMonthlyCosts, postPropertyMonthlyCosts, trackNegativeCash } from './finance';
+import { allViews } from './portfolio';
+import { runAutomation } from './automation';
+import { accrueInvestments, monthlyInvestments } from './investments';
+import { updatePropertyMarket } from './realestate';
 import { checkScenario, evaluateAchievements, evaluateGoals } from './goals';
 import { processInsuranceClaims } from './insurance';
 import { caretakerRound, progressJobs } from './jobs';
@@ -29,35 +33,42 @@ export function advanceDay(s: GameState): void {
   s.day += 1;
   const { day: dom, month, year } = toYmd(s.day);
 
+  const views = allViews(s);
   // --- Monatsbeginn
   if (dom === 1) {
-    createMonthlyClaims(s, rng);
+    for (const v of views) createMonthlyClaims(v, rng);
     if (month === 1) {
       const prev = s.counters.rentIndexRef ?? s.market.baseRentPerSqm;
       const delta = (s.market.baseRentPerSqm - prev) / Math.max(1, prev);
       s.counters.rentIndexRef = s.market.baseRentPerSqm;
       addMessage(s, { category: 'system', title: `Neuer Mietspiegel ${year}`, text: `Die ortsübliche Vergleichsmiete liegt jetzt bei ${formatMoney(s.market.baseRentPerSqm)} pro m² (Basis, ${delta >= 0 ? '+' : ''}${formatPercent(delta, 1)} gegenüber dem Vorjahr). Prüfen Sie mögliche Mietanpassungen unter „Verträge“.`, link: { page: 'contracts', id: null } });
     }
-    if (month === 3) runUtilitySettlement(s, year - 1);
+    if (month === 3) for (const v of views) runUtilitySettlement(v, year - 1);
   }
   if (month === 4 && dom === 30) annualTax(s, year - 1);
 
-  // --- Tagesablauf
-  applyPendingIncreases(s);
-  wearComponents(s);
-  updateCare(s);
-  generateComponentDefects(s, rng);
-  updateApartments(s, rng);
-  escalateDefects(s, rng);
-  progressJobs(s, rng);
-  caretakerRound(s, rng);
-  updateTenantsDaily(s, rng);
-  processPayments(s, rng);
-  autoDunning(s);
-  updateApplicants(s, rng);
-  accumulateEnergy(s);
-  processInsuranceClaims(s);
-  rollEvents(s, rng);
+  // --- Tagesablauf je Objekt
+  for (const v of views) {
+    applyPendingIncreases(v);
+    wearComponents(v);
+    updateCare(v);
+    generateComponentDefects(v, rng);
+    updateApartments(v, rng);
+    escalateDefects(v, rng);
+    progressJobs(v, rng);
+    caretakerRound(v, rng);
+    updateTenantsDaily(v, rng);
+    processPayments(v, rng);
+    autoDunning(v);
+    runAutomation(v, rng);
+    updateApplicants(v, rng);
+    accumulateEnergy(v);
+    processInsuranceClaims(v);
+    rollEvents(v, rng, v === s);
+  }
+  // --- Gemeinsame Abläufe
+  accrueInvestments(s, rng);
+  updatePropertyMarket(s, rng);
   expireDecisions(s, rng);
 
   trackNegativeCash(s);
@@ -73,7 +84,12 @@ export function advanceDay(s: GameState): void {
 
 export function monthlyClose(s: GameState, period: string, rng: Rng) {
   if (s.history.some((h) => h.period === period)) return;
-  postMonthlyCosts(s, period);
+  for (const v of allViews(s)) {
+    postPropertyMonthlyCosts(v, period);
+    pruneHistory(v);
+  }
+  postGlobalMonthlyCosts(s, period);
+  monthlyInvestments(s, rng, period);
   updateMarketMonthly(s, rng);
   const snap = createSnapshot(s, period);
   s.history.push(snap);
@@ -91,7 +107,6 @@ export function monthlyClose(s: GameState, period: string, rng: Rng) {
     link: { page: 'finance', id: null },
   });
   s.counters.monthMinCash = s.cash;
-  pruneHistory(s);
 }
 
 /** Hält den Spielstand schlank: alte, abgeschlossene Vorgänge werden entfernt (Buchungen bleiben vollständig). */

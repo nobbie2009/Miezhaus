@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type PageId = 'overview' | 'building' | 'apartments' | 'tenants' | 'finance' | 'repairs' | 'renovation' | 'contracts' | 'energy' | 'staff' | 'events' | 'statistics' | 'goals' | 'settings';
+export type PageId = 'portfolio' | 'overview' | 'building' | 'apartments' | 'tenants' | 'finance' | 'repairs' | 'renovation' | 'contracts' | 'energy' | 'staff' | 'events' | 'statistics' | 'goals' | 'settings';
 export type Theme = 'light' | 'dark' | 'system';
 
 const read = <T,>(k: string, d: T): T => {
@@ -41,6 +41,9 @@ interface UiStore {
   aiEnabled: boolean;
   aiUrl: string;
   aiModel: string;
+  /** Aktuell ausgewähltes Objekt (null = Stammhaus) */
+  activePropertyId: string | null;
+  setProperty: (id: string | null) => void;
   navigate: (p: PageId | string, focusId?: string | null) => void;
   setTheme: (t: Theme) => void;
   setExpert: (v: boolean) => void;
@@ -63,6 +66,8 @@ export const useUi = create<UiStore>((set, get) => ({
   aiEnabled: read('mt-ai', false),
   aiUrl: read('mt-ai-url', 'http://localhost:11434'),
   aiModel: read('mt-ai-model', 'llama3.2'),
+  activePropertyId: null,
+  setProperty: (id) => set({ activePropertyId: id }),
   navigate: (p, focusId = null) => {
     set({ page: p as PageId, focusId, sidebarOpen: false });
     if (typeof window !== 'undefined') window.scrollTo?.({ top: 0 });

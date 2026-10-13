@@ -1,12 +1,14 @@
 import type { GameState, Snapshot } from '@/domain/schema';
 import { entriesInPeriod, summarize } from './ledger';
+import { allViews } from './portfolio';
 import {
+  activeTenants,
+  portfolioValue,
   avgSatisfaction,
   backlogCost,
   buildingCondition,
   equity,
   loanBalance,
-  marketValue,
   occupiedCount,
   receivablesByAge,
   targetRent,
@@ -14,13 +16,21 @@ import {
 } from './derived';
 import { computeScore } from './score';
 
+const sumBy = <T,>(xs: T[], f: (x: T) => number) => xs.reduce((a, x) => a + f(x), 0);
+
 /** Monatsabschluss-Kennzahlen – ausschließlich aus Buchungen und Spielzustand berechnet. */
 export function createSnapshot(s: GameState, period: string): Snapshot {
   const entries = entriesInPeriod(s, period);
   const sum = summarize(entries);
-  const rentClaims = s.claims.filter((c) => c.kind === 'rent' && c.period === period);
-  const age = receivablesByAge(s);
-  const energy = s.energyHistory.find((e) => e.period === period);
+  // Kennzahlen über das gesamte Portfolio
+  const views = allViews(s);
+  const rentClaims = views.flatMap((v) => v.claims.filter((c) => c.kind === 'rent' && c.period === period));
+  const ages = views.map((v) => receivablesByAge(v));
+  const age = { d30: sumBy(ages, (a) => a.d30), d60: sumBy(ages, (a) => a.d60), d90: sumBy(ages, (a) => a.d90), over90: sumBy(ages, (a) => a.over90) };
+  const energies = views.map((v) => v.energyHistory.find((e) => e.period === period)).filter((e) => !!e);
+  const units = sumBy(views, (v) => v.apartments.length);
+  const occupied = sumBy(views, (v) => occupiedCount(v));
+  const tenantsN = sumBy(views, (v) => activeTenants(v).length);
   const repairCosts = 0 - ((sum.byCategory.repair ?? 0) + (sum.byCategory.maintenance ?? 0) + (sum.byCategory.damage ?? 0));
   return {
     period,
@@ -39,19 +49,19 @@ export function createSnapshot(s: GameState, period: string): Snapshot {
     arrears60: age.d60,
     arrears90: age.d90,
     arrearsOver90: age.over90,
-    occupied: occupiedCount(s),
-    units: s.apartments.length,
-    vacancyRate: vacancyRate(s),
-    avgSatisfaction: avgSatisfaction(s),
-    buildingCondition: buildingCondition(s),
-    backlogCost: backlogCost(s),
-    energyKwh: energy ? energy.heatKwh + energy.hotWaterKwh + energy.commonKwh : 0,
-    energyCost: energy?.cost ?? 0,
-    waterM3: energy?.waterM3 ?? 0,
-    marketValue: marketValue(s),
+    occupied,
+    units,
+    vacancyRate: views.length === 1 ? vacancyRate(s) : 1 - occupied / Math.max(1, units),
+    avgSatisfaction: views.length === 1 ? avgSatisfaction(s) : sumBy(views, (v) => avgSatisfaction(v) * activeTenants(v).length) / Math.max(1, tenantsN),
+    buildingCondition: views.length === 1 ? buildingCondition(s) : sumBy(views, (v) => buildingCondition(v) * v.apartments.length) / Math.max(1, units),
+    backlogCost: sumBy(views, (v) => backlogCost(v)),
+    energyKwh: sumBy(energies, (e) => e.heatKwh + e.hotWaterKwh + e.commonKwh),
+    energyCost: sumBy(energies, (e) => e.cost),
+    waterM3: sumBy(energies, (e) => e.waterM3),
+    marketValue: portfolioValue(s),
     loanBalance: loanBalance(s),
     equity: equity(s),
-    netRentMonthly: targetRent(s),
+    netRentMonthly: sumBy(views, (v) => targetRent(v)),
     score: computeScore(s).total,
   };
 }

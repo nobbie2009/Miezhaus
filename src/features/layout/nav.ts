@@ -1,4 +1,4 @@
-import { BarChart3, Bell, Building2, Cog, DoorOpen, FileText, Gauge, Hammer, Home, Landmark, Leaf, Paintbrush, Trophy, Users, Wrench, type LucideIcon } from 'lucide-react';
+import { Briefcase, BarChart3, Bell, Building2, Cog, DoorOpen, FileText, Gauge, Hammer, Home, Landmark, Leaf, Paintbrush, Trophy, Users, Wrench, type LucideIcon } from 'lucide-react';
 import type { GameState } from '@/domain/schema';
 import type { PageId } from '@/store/uiStore';
 import { hasUnlock } from '@/game/progression';
@@ -40,6 +40,7 @@ export const NAV: NavItem[] = [
   { id: 'energy', label: 'Energie & Betriebskosten', icon: Leaf, locked: (s) => (hasUnlock(s, 'energy') ? null : 'Wird in Phase 2 (Stabilisierung) freigeschaltet.') },
   { id: 'staff', label: 'Personal & Dienstleister', icon: Hammer },
   { id: 'events', label: 'Ereignisse & Nachrichten', icon: Bell, badge: (s) => { const d = s.decisions.length; const u = s.messages.filter((m) => !m.read).length; return d ? { n: d, tone: 'danger' } : u ? { n: u, tone: 'primary' } : null; } },
+  { id: 'portfolio', label: 'Vermögen & Immobilien', icon: Briefcase, badge: (s) => (s.propertyMarket.length ? { n: s.propertyMarket.length, tone: 'primary' } : null) },
   { id: 'statistics', label: 'Statistiken', icon: BarChart3, locked: (s) => (s.history.length >= 1 ? null : 'Verfügbar nach dem ersten Monatsabschluss.') },
   { id: 'goals', label: 'Ziele & Erfolge', icon: Trophy },
   { id: 'settings', label: 'Einstellungen', icon: Cog },

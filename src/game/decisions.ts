@@ -19,7 +19,7 @@ export function makeDecision(s: GameState, eventId: string, d: DecisionInput): D
     title: d.title,
     text: d.text,
     options: d.options.map((o) => ({ ...o, costHint: o.costHint ?? null })),
-    context: d.context ?? {},
+    context: { ...(d.context ?? {}), propertyId: s.building.id },
     expiresDay: s.day + (d.expiresInDays ?? 14),
     defaultOptionId: d.defaultOptionId,
     severity: d.severity ?? 'info',

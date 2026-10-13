@@ -19,6 +19,7 @@ export function addMessage(
     apartmentId: m.apartmentId ?? null,
     defectId: m.defectId ?? null,
     link: m.link ?? null,
+    propertyId: m.propertyId ?? s.building.id,
     read: false,
     important: m.important ?? false,
   };

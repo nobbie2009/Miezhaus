@@ -2,7 +2,8 @@ import type { GameState, Loan } from '@/domain/schema';
 import { formatMoney, mulCents } from '@/utils/money';
 import { fromYmd, toYmd } from '@/utils/date';
 import { CONFIG } from './config';
-import { loanBalance, marketValue, persons } from './derived';
+import { loanBalance, marketValue, persons, portfolioValue } from './derived';
+import { allViews } from './portfolio';
 import { emptyEnergyMonth } from './energy';
 import { nextId } from './ids';
 import { post } from './ledger';
@@ -15,8 +16,8 @@ export function annuity(principal: number, annualRate: number, months: number): 
   return Math.ceil((principal * r) / (1 - Math.pow(1 + r, -months)));
 }
 
-/** Postet alle laufenden Monatskosten für den abgelaufenen Monat. Idempotent je Periode. */
-export function postMonthlyCosts(s: GameState, period: string) {
+/** Monatskosten eines Objekts (Energie, Betriebskosten, Dienstleistungen). Idempotent je Objekt und Periode. */
+export function postPropertyMonthlyCosts(s: GameState, period: string) {
   const key = `costs-${period}`;
   if (s.counters[key]) return;
   s.counters[key] = 1;
@@ -36,7 +37,6 @@ export function postMonthlyCosts(s: GameState, period: string) {
   const waste = Math.round(persons(s) * c.wastePerPersonMonth * (s.building.amenities.includes('waste_sorting') ? 0.85 : 1)) + 2500;
   fixed('waste', waste, 'Müllgebühren');
   fixed('property_tax', c.propertyTaxMonthly, 'Grundsteuer');
-  fixed('other_expense', c.bankFeesMonthly, 'Kontoführung');
   fixed('cleaning', c.cleaning[sv.cleaning], 'Treppenhausreinigung');
   fixed('garden', c.garden[sv.garden], 'Gartenpflege');
   fixed('caretaker', c.caretaker[sv.caretaker], 'Hausmeister');
@@ -44,6 +44,21 @@ export function postMonthlyCosts(s: GameState, period: string) {
   fixed('insurance', c.insurance[sv.insurance], 'Gebäudeversicherung');
   fixed('maintenance', sv.maintenancePlan ? c.maintenancePlan : 0, 'Wartungsvertrag');
   fixed('garden', sv.winterService ? c.winterService : 0, 'Winterdienst');
+  fixed('administration', sv.tenantApp ? CONFIG.costs.tenantAppBase + CONFIG.costs.tenantAppPerUnit * s.apartments.length : 0, 'Mieter-App');
+  s.energyHistory.push({ ...s.energyMonth, period, cost: Math.round(e.heatCost + e.elecCost + e.waterCost - e.feedIn) });
+  if (s.energyHistory.length > 240) s.energyHistory.shift();
+  s.energyMonth = emptyEnergyMonth();
+}
+
+/** Gemeinsame Monatskosten: Kontoführung, Dispozinsen, Kredite, Rahmenverträge. Idempotent je Periode. */
+export function postGlobalMonthlyCosts(s: GameState, period: string) {
+  const key = `global-${period}`;
+  if (s.counters[key]) return;
+  s.counters[key] = 1;
+  const ref = { type: 'month', id: period };
+  post(s, { category: 'other_expense', amount: -CONFIG.costs.bankFeesMonthly, purpose: `Kontoführung ${period}`, ref });
+  const fw = s.automation.frameworkContracts.length;
+  if (fw > 0) post(s, { category: 'administration', amount: -fw * CONFIG.costs.frameworkContractFee, purpose: `Rahmenverträge Handwerker (${fw}) ${period}`, ref });
   // Dispozinsen auf negative Salden (taggenau aufsummiert)
   const neg = s.counters.negativeCashSum ?? 0;
   if (neg > 0) {
@@ -53,9 +68,6 @@ export function postMonthlyCosts(s: GameState, period: string) {
   }
   // Kredite
   for (const loan of s.loans) payLoanInstallment(s, loan, period);
-  s.energyHistory.push({ ...s.energyMonth, period, cost: Math.round(e.heatCost + e.elecCost + e.waterCost - e.feedIn) });
-  if (s.energyHistory.length > 240) s.energyHistory.shift();
-  s.energyMonth = emptyEnergyMonth();
 }
 
 function payLoanInstallment(s: GameState, loan: Loan, period: string) {
@@ -87,7 +99,7 @@ export interface LoanQuote {
 }
 
 export function loanQuote(s: GameState, amount: number, years: number): LoanQuote {
-  const value = marketValue(s);
+  const value = portfolioValue(s);
   const maxAmount = Math.max(0, Math.floor((value * CONFIG.finance.maxLoanToValue - loanBalance(s)) / 100000) * 100000);
   const ltvAfter = (loanBalance(s) + amount) / Math.max(1, value);
   const annualRate = Math.round((s.market.interestRate + 0.004 + Math.max(0, ltvAfter - 0.5) * 0.04 + (years > 15 ? 0.003 : 0) + (s.daysBelowOverdraft > 0 ? CONFIG.finance.loanRiskPremium : 0)) * 10000) / 10000;
@@ -151,7 +163,7 @@ export function annualTax(s: GameState, year: number) {
   const start = fromYmd(year, 1, 1);
   const end = fromYmd(year + 1, 1, 1);
   if (s.startDay > start + 200) return; // Kein volles Steuerjahr gespielt
-  const excluded = ['loan_disbursement', 'loan_principal', 'tax', 'modernization'];
+  const excluded = ['loan_disbursement', 'loan_principal', 'tax', 'modernization', 'property_purchase', 'purchase_costs', 'property_sale', 'investment_deposit', 'investment_withdrawal', 'investment_income', 'capital_gains_tax'];
   let result = 0;
   let modernization = 0;
   for (const e of s.ledger) {
@@ -161,7 +173,7 @@ export function annualTax(s: GameState, year: number) {
     result += e.amount;
   }
   // Modernisierungen werden über 10 Jahre abgeschrieben, das Gebäude mit 2 % p. a.
-  const depreciation = Math.round(modernization / 10) + Math.round((marketValue(s) - s.building.landValue) * 0.02);
+  const depreciation = Math.round(modernization / 10) + allViews(s).reduce((a, v) => a + Math.round((marketValue(v) - v.building.landValue) * 0.02), 0);
   const taxable = result - depreciation;
   const tax = Math.max(0, Math.round(taxable * CONFIG.finance.taxRate));
   if (tax > 0) post(s, { category: 'tax', amount: -tax, purpose: `Steuer auf Vermietungsüberschuss ${year}`, ref: { type: 'tax', id: String(year) } });

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { CalendarDays, ChevronsRight, FastForward, HelpCircle, Menu, Pause, Play, Save, Search, SkipForward, Snowflake, Sun, Leaf, Flower2, Undo2, Bell } from 'lucide-react';
+import { Building2, CalendarDays, ChevronsRight, FastForward, HelpCircle, Menu, Pause, Play, Save, Search, SkipForward, Snowflake, Sun, Leaf, Flower2, Undo2, Bell } from 'lucide-react';
 import { useGame, type Speed } from '@/store/gameStore';
 import { useUi } from '@/store/uiStore';
 import { Button, Tip } from '@/components/ui';
@@ -18,7 +18,7 @@ const SPEEDS: { id: Speed; label: string; icon: React.ReactNode; key: string }[]
 export function TopBar() {
   const s = useGame((x) => x.game)!;
   const { speed, setSpeed, advance, save, undo, undoLast, toast, dirty } = useGame();
-  const { setSidebar, setSearch, setHelp, navigate } = useUi();
+  const { setSidebar, setSearch, setHelp, navigate, activePropertyId, setProperty } = useUi();
   const season = seasonOf(s.day);
   const temp = temperature(s.day, s.seed);
   const SeasonIcon = { winter: Snowflake, spring: Flower2, summer: Sun, autumn: Leaf }[season];
@@ -77,10 +77,29 @@ export function TopBar() {
           <div className="min-w-0 leading-tight">
             <div className="num truncate text-sm font-semibold" data-testid="game-date">{formatDateLong(s.day)}</div>
             <div className="text-[11px] text-muted-fg">
-              {SEASON_LABEL[season]} · {temp.toLocaleString('de-DE')} °C · {s.building.name}
+              {SEASON_LABEL[season]} · {temp.toLocaleString('de-DE')} °C{s.properties.length === 0 && ` · ${s.building.name}`}
             </div>
           </div>
         </div>
+        {s.properties.length > 0 && (
+          <label className="flex items-center gap-1.5">
+            <Building2 size={15} className="text-muted-fg" />
+            <span className="sr-only">Objekt wählen</span>
+            <select
+              className="input h-9 max-w-[260px] py-0 text-sm"
+              value={activePropertyId ?? s.building.id}
+              onChange={(e) => setProperty(e.target.value === s.building.id ? null : e.target.value)}
+              aria-label="Objekt wählen"
+              data-testid="property-switcher"
+            >
+              {[s, ...s.properties].map((p) => (
+                <option key={p.building.id} value={p.building.id}>
+                  {p.building.name} · {p.apartments.length} WE
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <div className="ml-auto flex items-center gap-1 rounded-xl bg-muted p-1" role="group" aria-label="Zeitsteuerung">
           {SPEEDS.map((sp) => (

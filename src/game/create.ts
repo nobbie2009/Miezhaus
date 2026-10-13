@@ -1,13 +1,13 @@
-import type { Apartment, Building, Claim, ComponentKey, GameState } from '@/domain/schema';
+import type { Apartment, Automation, Building, Claim, ComponentKey, GameState } from '@/domain/schema';
 import { COMPONENT_KEYS } from '@/domain/schema';
 import { CONTRACTOR_TEMPLATES } from '@/content/contractors';
 import { SCENARIO_BY_ID, type SandboxOptions, type ScenarioDef } from '@/content/scenarios';
 import { addMonths, fromYmd, monthKey, toYmd } from '@/utils/date';
-import { allocateCents } from '@/utils/money';
+import { allocateCents, euro } from '@/utils/money';
 import { clamp } from '@/utils/misc';
 import { Rng, seedFromString } from '@/utils/rng';
 import { CONFIG, type Difficulty } from './config';
-import { comparableRent, specificEnergyDemand } from './derived';
+import { comparableRent, marketValue, specificEnergyDemand } from './derived';
 import { emptyEnergyMonth } from './energy';
 import { annuity } from './finance';
 import { nextId } from './ids';
@@ -17,7 +17,7 @@ import { PHASES } from './progression';
 import { createContract, createTenant, generatePerson } from './tenants';
 import { createDefect } from './defects';
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export interface NewGameOptions {
   scenarioId: string;
@@ -28,7 +28,7 @@ export interface NewGameOptions {
   sandbox?: SandboxOptions;
 }
 
-function tierFor(def: ScenarioDef, key: ComponentKey): number {
+function tierFor(def: PropertyDef, key: ComponentKey): number {
   if (key === 'windows') return def.building.windowTier;
   if (key === 'heating') return def.building.heatingSystem === 'gas_condensing' ? 4 : def.building.heatingSystem === 'heat_pump' || def.building.heatingSystem === 'district' ? 5 : 2;
   return def.building.yearBuilt >= 1980 ? 3 : 2;
@@ -42,19 +42,6 @@ export function createGame(opts: NewGameOptions): GameState {
   if (sb) applySandbox(def, sb);
   const seed = (opts.seed ?? sb?.seed ?? seedFromString(`${def.id}-${Date.now()}`)) >>> 0;
   const startDay = fromYmd(def.start.year, def.start.month, 1);
-  const floors = def.floors.length;
-
-  const components = {} as Building['components'];
-  for (const key of COMPONENT_KEYS) {
-    components[key] = {
-      key,
-      condition: clamp(def.components[key]),
-      tier: tierFor(def, key),
-      installedYear: key === 'heating' ? def.building.heatingYear : def.building.yearBuilt,
-      lastMaintenanceDay: null,
-      lastRenewalDay: null,
-    };
-  }
 
   const s: GameState = {
     schemaVersion: SCHEMA_VERSION,
@@ -71,26 +58,7 @@ export function createGame(opts: NewGameOptions): GameState {
     startCash: def.startCash,
     overdraftLimit: def.overdraftLimit,
     daysBelowOverdraft: 0,
-    building: {
-      id: 'b1',
-      name: def.building.name,
-      address: def.building.address,
-      city: def.building.city,
-      yearBuilt: def.building.yearBuilt,
-      landValue: def.building.landValue,
-      buildingClass: def.building.buildingClass,
-      floors,
-      heatingSystem: def.building.heatingSystem,
-      insulationLevel: def.building.insulationLevel,
-      components,
-      amenities: [...(def.building.amenities ?? [])],
-      cleanliness: def.building.cleanliness,
-      outdoorCare: def.building.outdoorCare,
-      fireSafety: def.building.fireSafety,
-      security: def.building.security,
-      repairHistory: [],
-      modernizationHistory: [],
-    },
+    building: buildBuilding(def, 'b1'),
     apartments: [],
     tenants: [],
     contracts: [],
@@ -120,6 +88,12 @@ export function createGame(opts: NewGameOptions): GameState {
     idCounter: 0,
     gameOver: null,
     log: [],
+    properties: [],
+    propertyMarket: [],
+    investments: [],
+    automation: defaultAutomation(),
+    purchaseDay: startDay,
+    purchasePrice: 0,
   };
   const rng = new Rng(s);
   for (const p of PHASES) if (p.phase <= s.phase) s.unlocks.push(...p.unlocks);
@@ -131,11 +105,95 @@ export function createGame(opts: NewGameOptions): GameState {
     s.contractors.push({ id: nextId(s, 'c'), name: t.name, trade: t.trade, priceFactor: t.priceFactor, quality: t.quality, reliability: t.reliability, waitDays: t.waitDays, jobsDone: 0, available: true, busyUntil: 0, description: t.description });
   }
 
+  populateProperty(s, def, rng, { aptPrefix: '', startDay, arrears: true });
+
+  for (const l of def.loans) {
+    const months = l.yearsLeft * 12;
+    s.loans.push({ id: nextId(s, 'k'), name: l.name, kind: 'initial', principal: l.principal, remaining: l.remaining, annualRate: l.rate, termMonths: months, monthlyPayment: annuity(l.remaining, l.rate, months), startDay, paidMonths: 0, purpose: 'Bestandsfinanzierung' });
+  }
+
+  s.counters.startEnergyDemand = specificEnergyDemand(s);
+  s.purchasePrice = marketValue(s);
+  s.counters.monthMinCash = s.cash;
+  s.counters.rentIndexRef = s.market.baseRentPerSqm;
+  createMonthlyClaims(s, rng);
+
+  addMessage(s, {
+    category: 'system',
+    severity: 'info',
+    title: `Willkommen in der ${def.building.name}`,
+    text: def.intro.join(' '),
+    important: true,
+    link: { page: 'goals', id: null },
+  });
+  if (s.endDay) addMessage(s, { category: 'goal', title: 'Szenarioziel', text: `Sie haben Zeit bis ${new Date(s.endDay * 86400000).toLocaleDateString('de-DE')}. Die Szenarioziele finden Sie unter „Ziele & Erfolge“.`, link: { page: 'goals', id: null } });
+  return s;
+}
+
+
+/** Ausschnitt einer Szenariodefinition, der ein einzelnes Objekt beschreibt. */
+export type PropertyDef = Pick<ScenarioDef, 'building' | 'components' | 'floors' | 'componentDefects' | 'utilityPerSqm'>;
+
+export function buildBuilding(def: PropertyDef, id: string): Building {
+  const components = {} as Building['components'];
+  for (const key of COMPONENT_KEYS) {
+    components[key] = {
+      key,
+      condition: clamp(def.components[key]),
+      tier: tierFor(def, key),
+      installedYear: key === 'heating' ? def.building.heatingYear : def.building.yearBuilt,
+      lastMaintenanceDay: null,
+      lastRenewalDay: null,
+    };
+  }
+  return {
+    id,
+    name: def.building.name,
+    address: def.building.address,
+    city: def.building.city,
+    yearBuilt: def.building.yearBuilt,
+    landValue: def.building.landValue,
+    buildingClass: def.building.buildingClass,
+    locationFactor: def.building.locationFactor ?? 1,
+    floors: def.floors.length,
+    heatingSystem: def.building.heatingSystem,
+    insulationLevel: def.building.insulationLevel,
+    components,
+    amenities: [...(def.building.amenities ?? [])],
+    cleanliness: def.building.cleanliness,
+    outdoorCare: def.building.outdoorCare,
+    fireSafety: def.building.fireSafety,
+    security: def.building.security,
+    repairHistory: [],
+    modernizationHistory: [],
+  };
+}
+
+export function defaultAutomation(): Automation {
+  return {
+    autoRepair: true,
+    maxAutoCost: euro(1500),
+    monthlyBudget: euro(6000),
+    minCashReserve: euro(5000),
+    strategy: 'value',
+    includeCritical: true,
+    preferred: {},
+    frameworkContracts: [],
+    autoLetting: false,
+    lettingRentFactor: 0.97,
+    minApplicantFit: 0.6,
+    autoRenovateVacant: false,
+    autoMaintenance: false,
+  };
+}
+
+/** Legt Wohnungen, Mieter, Verträge und Bestandsmängel eines Objekts an (s darf eine Objekt-Sicht sein). */
+export function populateProperty(s: GameState, def: PropertyDef, rng: Rng, o: { aptPrefix: string; startDay: number; arrears: boolean }) {
   // Wohnungen
   def.floors.forEach((row, f) =>
     row.forEach((spec, p) => {
       const a: Apartment = {
-        id: `apt-${f}-${p + 1}`,
+        id: `${o.aptPrefix}apt-${f}-${p + 1}`,
         number: `${f}.${p + 1}`,
         floor: f,
         position: p,
@@ -151,7 +209,7 @@ export function createGame(opts: NewGameOptions): GameState {
         status: spec.tenant ? 'rented' : spec.status ?? (spec.condition < CONFIG.apartments.needsRenovationBelow ? 'vacant_needs_renovation' : 'vacant_ready'),
         tenantId: null,
         contractId: null,
-        lastRenovationDay: spec.condition > 85 ? startDay - 400 : null,
+        lastRenovationDay: spec.condition > 85 ? o.startDay - 400 : null,
         listing: null,
         modernizationPool: 0,
         blockedUntil: null,
@@ -165,64 +223,44 @@ export function createGame(opts: NewGameOptions): GameState {
   def.floors.forEach((row, f) =>
     row.forEach((spec, p) => {
       if (!spec.tenant) return;
-      const a = s.apartments.find((x) => x.id === `apt-${f}-${p + 1}`)!;
+      const a = s.apartments.find((x) => x.id === `${o.aptPrefix}apt-${f}-${p + 1}`)!;
       const ts = spec.tenant;
       const person = generatePerson(rng, { archetype: ts.archetype, apt: a });
       if (ts.reliability !== undefined) person.paymentReliability = ts.reliability;
       if (ts.stress !== undefined) person.financialStress = ts.stress;
       if (ts.moveOutTendency !== undefined) person.traits.moveOutTendency = ts.moveOutTendency;
       if (person.householdSize > a.rooms + 1) person.householdSize = Math.max(1, Math.floor(a.rooms));
-      const moveIn = startDay - Math.round(ts.yearsAgo * 365) - rng.int(0, 60);
+      const moveIn = o.startDay - Math.round(ts.yearsAgo * 365) - rng.int(0, 60);
       const t = createTenant(s, person, a.id, moveIn, ts.satisfaction ?? 65);
       const rent = Math.round((comparableRent(s, a) * ts.rentFactor) / 1000) * 1000;
       const util = Math.round((a.area * utilPerSqm) / 500) * 500;
-      const lastIncrease = ts.yearsAgo > 2 ? startDay - rng.int(300, 700) : null;
+      const lastIncrease = ts.yearsAgo > 2 ? o.startDay - rng.int(300, 700) : null;
       const c = createContract(s, a, t, rent, util, moveIn, { lastIncrease });
       c.changes = [{ day: moveIn, text: 'Mietvertrag geschlossen (Bestandsvertrag).' }];
       if (lastIncrease) c.rentHistory.push({ day: lastIncrease, netRent: rent, utilityPrepayment: util, reason: 'Letzte Mietanpassung' });
-      if (ts.arrearsMonths) addStartArrears(s, c.id, ts.arrearsMonths, startDay);
+      if (ts.arrearsMonths && o.arrears) addStartArrears(s, c.id, ts.arrearsMonths, o.startDay);
       if (spec.defects)
         for (const d of spec.defects) {
           const created = createDefect(s, d.type, { kind: 'apartment', apartmentId: a.id }, { cause: 'Bestehender Mangel bei Übernahme.', discovered: d.discovered, reportedBy: d.discovered ? t.id : null, silent: true });
-          if (created && d.discovered) created.discoveredDay = startDay - 6;
+          if (created && d.discovered) created.discoveredDay = o.startDay - 6;
         }
     }),
   );
   def.floors.forEach((row, f) =>
     row.forEach((spec, p) => {
       if (spec.tenant || !spec.defects) return;
-      for (const d of spec.defects) createDefect(s, d.type, { kind: 'apartment', apartmentId: `apt-${f}-${p + 1}` }, { cause: 'Bestehender Mangel bei Übernahme.', discovered: d.discovered, silent: true });
+      for (const d of spec.defects) createDefect(s, d.type, { kind: 'apartment', apartmentId: `${o.aptPrefix}apt-${f}-${p + 1}` }, { cause: 'Bestehender Mangel bei Übernahme.', discovered: d.discovered, silent: true });
     }),
   );
   for (const d of def.componentDefects ?? []) {
     const created = createDefect(s, d.type, { kind: 'component', key: d.key }, { cause: 'Bestehender Mangel bei Übernahme.', discovered: d.discovered, silent: true });
     if (created) {
-      created.createdDay = startDay - 20;
+      created.createdDay = o.startDay - 20;
       if (created.escalateAtDay) created.escalateAtDay -= 20;
-      if (d.discovered) created.discoveredDay = startDay - 10;
+      if (d.discovered) created.discoveredDay = o.startDay - 10;
     }
   }
 
-  for (const l of def.loans) {
-    const months = l.yearsLeft * 12;
-    s.loans.push({ id: nextId(s, 'k'), name: l.name, kind: 'initial', principal: l.principal, remaining: l.remaining, annualRate: l.rate, termMonths: months, monthlyPayment: annuity(l.remaining, l.rate, months), startDay, paidMonths: 0, purpose: 'Bestandsfinanzierung' });
-  }
-
-  s.counters.startEnergyDemand = specificEnergyDemand(s);
-  s.counters.monthMinCash = s.cash;
-  s.counters.rentIndexRef = s.market.baseRentPerSqm;
-  createMonthlyClaims(s, rng);
-
-  addMessage(s, {
-    category: 'system',
-    severity: 'info',
-    title: `Willkommen in der ${def.building.name}`,
-    text: def.intro.join(' '),
-    important: true,
-    link: { page: 'goals', id: null },
-  });
-  if (s.endDay) addMessage(s, { category: 'goal', title: 'Szenarioziel', text: `Sie haben Zeit bis ${new Date(s.endDay * 86400000).toLocaleDateString('de-DE')}. Die Szenarioziele finden Sie unter „Ziele & Erfolge“.`, link: { page: 'goals', id: null } });
-  return s;
 }
 
 const euro35 = 350;

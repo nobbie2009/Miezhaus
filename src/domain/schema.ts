@@ -39,6 +39,8 @@ export const BuildingSchema = z.object({
   yearBuilt: int,
   landValue: cents,
   buildingClass: z.string(),
+  /** Lagefaktor (Mikrolage) – multipliziert die ortsübliche Vergleichsmiete. */
+  locationFactor: z.number().min(0.5).max(2),
   floors: int.min(1),
   heatingSystem: HeatingSystemSchema,
   insulationLevel: int.min(0).max(3),
@@ -224,6 +226,13 @@ export const LEDGER_CATEGORIES = [
   'damage',
   'utility_refund',
   'other_expense',
+  'property_purchase',
+  'purchase_costs',
+  'property_sale',
+  'investment_deposit',
+  'investment_withdrawal',
+  'investment_income',
+  'capital_gains_tax',
 ] as const;
 export const LedgerCategorySchema = z.enum(LEDGER_CATEGORIES);
 export type LedgerCategory = z.infer<typeof LedgerCategorySchema>;
@@ -238,6 +247,7 @@ export const LedgerEntrySchema = z.object({
   purpose: z.string(),
   status: z.enum(['posted', 'reversed']),
   ref: z.object({ type: z.string(), id: z.string() }).nullable(),
+  propertyId: z.string().nullable(),
 });
 export type LedgerEntry = z.infer<typeof LedgerEntrySchema>;
 
@@ -361,6 +371,8 @@ export const ServicesSchema = z.object({
   insurance: z.enum(['none', 'basic', 'comfort']),
   maintenancePlan: z.boolean(),
   winterService: z.boolean(),
+  /** Mieter-App: Mieter melden Schäden digital, Aufträge können automatisch vergeben werden. */
+  tenantApp: z.boolean(),
 });
 export type Services = z.infer<typeof ServicesSchema>;
 
@@ -415,6 +427,7 @@ export const MessageSchema = z.object({
   apartmentId: z.string().nullable(),
   defectId: z.string().nullable(),
   link: z.object({ page: z.string(), id: z.string().nullable() }).nullable(),
+  propertyId: z.string().nullable(),
   read: z.boolean(),
   important: z.boolean(),
 });
@@ -503,8 +516,76 @@ export const SettingsSchema = z.object({
 });
 export type GameSettings = z.infer<typeof SettingsSchema>;
 
+export const InvestmentSchema = z.object({
+  id,
+  kind: z.enum(['savings', 'fixed', 'etf']),
+  name: z.string(),
+  /** Eingezahltes Kapital (Einstandswert) */
+  principal: cents,
+  /** Aktueller Wert */
+  value: cents,
+  annualRate: z.number(),
+  startDay: int,
+  maturityDay: int.nullable(),
+  /** Aufgelaufene, noch nicht ausgezahlte Zinsen (Bruchteile von Cent) */
+  accrued: z.number(),
+  history: z.array(z.object({ day: int, value: cents })),
+});
+export type Investment = z.infer<typeof InvestmentSchema>;
+
+export const AutomationSchema = z.object({
+  autoRepair: z.boolean(),
+  maxAutoCost: cents,
+  monthlyBudget: cents,
+  minCashReserve: cents,
+  strategy: z.enum(['value', 'cheap', 'quality', 'fast']),
+  includeCritical: z.boolean(),
+  preferred: z.record(z.string(), z.string()),
+  frameworkContracts: z.array(z.string()),
+  autoLetting: z.boolean(),
+  lettingRentFactor: z.number().min(0.7).max(1.1),
+  minApplicantFit: z.number().min(0).max(1),
+  autoRenovateVacant: z.boolean(),
+  autoMaintenance: z.boolean(),
+});
+export type Automation = z.infer<typeof AutomationSchema>;
+
 export const GameModeSchema = z.enum(['campaign', 'endless', 'challenge', 'sandbox']);
 export type GameMode = z.infer<typeof GameModeSchema>;
+
+/** Weitere Immobilie im Portfolio (das Stammhaus liegt direkt im Spielstand). */
+export const PropertySchema = z.object({
+  building: BuildingSchema,
+  apartments: z.array(ApartmentSchema),
+  tenants: z.array(TenantSchema),
+  contracts: z.array(ContractSchema),
+  claims: z.array(ClaimSchema),
+  defects: z.array(DefectSchema),
+  jobs: z.array(JobSchema),
+  services: ServicesSchema,
+  insuranceClaims: z.array(InsuranceClaimSchema),
+  applicants: z.array(ApplicantSchema),
+  energyMonth: EnergyMonthSchema,
+  energyHistory: z.array(EnergyMonthSchema.extend({ period: z.string(), cost: cents })),
+  counters: z.record(z.string(), z.number()),
+  purchaseDay: int,
+  purchasePrice: cents,
+});
+export type Property = z.infer<typeof PropertySchema>;
+
+export const PropertyOfferSchema = z.object({
+  id,
+  listedDay: int,
+  expiresDay: int,
+  askingPrice: cents,
+  /** Geschätzter Zustand laut Exposé (ungenau) */
+  advertisedCondition: z.number(),
+  surveyed: z.boolean(),
+  seller: z.string(),
+  pitch: z.string(),
+  property: PropertySchema,
+});
+export type PropertyOffer = z.infer<typeof PropertyOfferSchema>;
 
 export const GameStateSchema = z.object({
   schemaVersion: int,
@@ -553,5 +634,11 @@ export const GameStateSchema = z.object({
     .object({ kind: z.enum(['insolvency', 'won', 'lost']), day: int, title: z.string(), text: z.string() })
     .nullable(),
   log: z.array(z.object({ day: int, text: z.string(), kind: z.string() })),
+  properties: z.array(PropertySchema),
+  propertyMarket: z.array(PropertyOfferSchema),
+  investments: z.array(InvestmentSchema),
+  automation: AutomationSchema,
+  purchaseDay: int,
+  purchasePrice: cents,
 });
 export type GameState = z.infer<typeof GameStateSchema>;

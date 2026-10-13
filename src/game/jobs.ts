@@ -16,6 +16,8 @@ import { addMessage, fill, log } from './messages';
 import { addMood } from './tenants';
 import { isHeatingSeason } from './weather';
 import { fileInsuranceClaim } from './insurance';
+import { allViews, rootOf } from './portfolio';
+import { CONFIG } from './config';
 
 export type JobRequest =
   | { kind: 'repair'; defectId: string }
@@ -153,12 +155,19 @@ export function activeSubsidyRate(s: GameState): number {
   return s.market.modifiers.filter((m) => m.kind === 'subsidy_energy' && m.untilDay >= s.day).reduce((a, m) => Math.max(a, m.value), 0);
 }
 
+export const hasFrameworkContract = (s: GameState, contractorId: string) => rootOf(s).automation.frameworkContracts.includes(contractorId);
+
 export function offersFor(s: GameState, spec: JobSpec): Offer[] {
+  const views = allViews(s);
   return eligibleContractors(s, spec.trade)
     .map((c) => {
       const tradeMatch = c.trade === spec.trade ? 1 : 1.08;
-      const price = Math.round(mulCents(spec.baseCost, materialIndex(s) * c.priceFactor * diff(s).costFactor * tradeMatch) / 1000) * 1000;
-      const busy = s.jobs.filter((j) => j.contractorId === c.id && (j.status === 'scheduled' || j.status === 'in_progress')).length;
+      const framework = hasFrameworkContract(s, c.id);
+      const price = Math.round(mulCents(spec.baseCost, materialIndex(s) * c.priceFactor * diff(s).costFactor * tradeMatch * (framework ? 1 - CONFIG.costs.frameworkDiscount : 1)) / 1000) * 1000;
+      // Auslastung über alle Objekte des Portfolios; Rahmenvertragspartner priorisieren Ihre Aufträge
+      const load = views.reduce((acc, v) => acc + v.jobs.filter((j) => j.contractorId === c.id && (j.status === 'scheduled' || j.status === 'in_progress')).length, 0);
+      const busy = framework ? Math.floor(load / 2) : load;
+      const waitDays = framework ? Math.max(0, c.waitDays - 2) : c.waitDays;
       const days = Math.max(1, Math.round(spec.baseDays * (1.25 - c.quality * 0.07)));
       const firstPayment = spec.measure ? Math.round(price * 0.3) : 0;
       return {
@@ -168,7 +177,7 @@ export function offersFor(s: GameState, spec: JobSpec): Offer[] {
         reliability: c.reliability,
         price,
         days,
-        startDay: Math.max(s.day + c.waitDays + busy, c.busyUntil),
+        startDay: Math.max(s.day + waitDays + busy, framework ? 0 : c.busyUntil),
         uncertainty: Math.min(0.6, spec.uncertainty * (1.35 - c.quality * 0.1)),
         firstPayment,
       };

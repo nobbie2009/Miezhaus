@@ -25,8 +25,8 @@ export const PHASES: PhaseDef[] = [
     phase: 3,
     title: 'Optimierung',
     description: 'Energieverbrauch senken, Wartung systematisieren, Renovierungen wirtschaftlich planen.',
-    unlocks: ['caretaker', 'big_energy'],
-    unlockText: ['Hausmeister (Teilzeit/Vollzeit)', 'Fassadendämmung, Wärmepumpe, Fernwärme', 'Gemeinschaftsraum, Strangsanierung'],
+    unlocks: ['caretaker', 'big_energy', 'portfolio'],
+    unlockText: ['Hausmeister (Teilzeit/Vollzeit)', 'Immobilienmarkt: weitere Objekte kaufen', 'Fassadendämmung, Wärmepumpe, Fernwärme', 'Gemeinschaftsraum, Strangsanierung'],
     requirement: ['Mind. 80 % vermietet', 'Ø Zufriedenheit ≥ 58 %', '2 Monate in Folge positiver operativer Cashflow'],
   },
   {

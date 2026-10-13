@@ -55,6 +55,7 @@ export interface ScenarioDef {
     fireSafety: number;
     security: number;
     amenities?: string[];
+    locationFactor?: number;
   };
   components: Record<ComponentKey, number>;
   /** Pro Etage eine Liste von Wohnungen (Etage 0 = EG). */
@@ -70,7 +71,7 @@ export interface ScenarioDef {
   intro: string[];
 }
 
-const SERVICES_BASIC: Services = { cleaning: 'tenants', garden: 'none', caretaker: 'none', management: 'self', insurance: 'basic', maintenancePlan: false, winterService: false };
+const SERVICES_BASIC: Services = { cleaning: 'tenants', garden: 'none', caretaker: 'none', management: 'self', insurance: 'basic', maintenancePlan: false, winterService: false, tenantApp: false };
 
 /** Das Startgebäude aus der Spielbeschreibung: Lindenstraße 14, 10 Wohnungen. */
 const LINDEN_FLOORS: AptSpec[][] = [
@@ -248,7 +249,7 @@ export const SCENARIOS: ScenarioDef[] = [
       { key: 'sanitary', type: 'sanitary_clog', discovered: true },
     ],
     loans: [{ name: 'Annuitätendarlehen Volksbank', remaining: euro(540000), rate: 0.041, yearsLeft: 22, principal: euro(600000) }],
-    services: { cleaning: 'weekly', garden: 'biweekly', caretaker: 'none', management: 'agency', insurance: 'comfort', maintenancePlan: false, winterService: true },
+    services: { cleaning: 'weekly', garden: 'biweekly', caretaker: 'none', management: 'agency', insurance: 'comfort', maintenancePlan: false, winterService: true, tenantApp: false },
     market: { baseRentPerSqm: euro(8.9), energyPriceIndex: 1.05, interestRate: 0.041 },
     goals: ['first_rent', 'liquid_3', 'liquid_6', 'surplus_6', 'arrears_2k', 'full_occupancy', 'sat_60'],
     winGoals: ['surplus_6', 'arrears_2k', 'liquid_6'],

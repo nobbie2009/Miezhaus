@@ -5,6 +5,7 @@ import { mulCents } from '@/utils/money';
 import { clamp } from '@/utils/misc';
 import { CONFIG } from './config';
 import { STANDARD_DEGREE_DAYS } from './weather';
+import { allViews } from './portfolio';
 
 /**
  * Abgeleitete Kennzahlen. Reine Funktionen ohne Seiteneffekte –
@@ -155,7 +156,7 @@ export function apartmentQualityFactor(s: GameState, a: Apartment): number {
 
 /** Ortsübliche Vergleichsmiete (Nettokalt pro Monat) in Cent – vereinfachter Mietspiegel. */
 export function comparableRent(s: GameState, a: Apartment): number {
-  const perSqm = s.market.baseRentPerSqm * rentIndex(s) * apartmentQualityFactor(s, a);
+  const perSqm = s.market.baseRentPerSqm * (s.building.locationFactor ?? 1) * rentIndex(s) * apartmentQualityFactor(s, a);
   return Math.round((a.area * perSqm) / 100) * 100;
 }
 
@@ -252,9 +253,16 @@ export function marketValue(s: GameState): number {
   return Math.max(s.building.landValue, value);
 }
 
-export const equity = (s: GameState) => marketValue(s) + s.cash - loanBalance(s) - liabilities(s) + Math.min(0, 0);
+/** Summe der Marktwerte aller Objekte im Portfolio. */
+export const portfolioValue = (s: GameState) => allViews(s).reduce((a, v) => a + marketValue(v), 0);
+/** Aktueller Wert aller Geldanlagen. */
+export const investmentsValue = (s: GameState) => s.investments.reduce((a, i) => a + i.value, 0);
+const allLiabilities = (s: GameState) => allViews(s).reduce((a, v) => a + v.jobs.filter((j) => j.status === 'in_progress').reduce((x, j) => x + Math.max(0, j.estimatedCost - j.paid), 0), 0) + Math.max(0, -s.cash);
+
+/** Eigenkapital des gesamten Portfolios: Immobilien + Konto + Anlagen − Kredite − Verbindlichkeiten. */
+export const equity = (s: GameState) => portfolioValue(s) + s.cash + investmentsValue(s) - loanBalance(s) - allLiabilities(s);
 export const equityRatio = (s: GameState) => {
-  const assets = marketValue(s) + Math.max(0, s.cash);
+  const assets = portfolioValue(s) + Math.max(0, s.cash) + investmentsValue(s);
   return assets > 0 ? equity(s) / assets : 0;
 };
 
@@ -272,7 +280,8 @@ export function monthlyFixedCosts(s: GameState): number {
     mgmt +
     c.insurance[sv.insurance] +
     (sv.maintenancePlan ? c.maintenancePlan : 0) +
-    (sv.winterService ? c.winterService : 0)
+    (sv.winterService ? c.winterService : 0) +
+    (sv.tenantApp ? c.tenantAppBase + c.tenantAppPerUnit * s.apartments.length : 0)
   );
 }
 

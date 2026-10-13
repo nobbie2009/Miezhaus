@@ -1,5 +1,5 @@
 import { Lock, Star, X } from 'lucide-react';
-import { useGame } from '@/store/gameStore';
+import { useGs } from '@/hooks/useGameState';
 import { useUi } from '@/store/uiStore';
 import { Tip } from '@/components/ui';
 import { cn } from '@/utils/misc';
@@ -8,7 +8,7 @@ import { PHASES } from '@/game/progression';
 import { GfxImage } from '@/features/graphics/Gfx';
 
 export function Sidebar() {
-  const s = useGame((x) => x.game)!;
+  const s = useGs();
   const { page, navigate, favorites, toggleFavorite, sidebarOpen, setSidebar } = useUi();
   const phase = PHASES[s.phase - 1];
   const items = [...NAV].sort((a, b) => Number(favorites.includes(b.id)) - Number(favorites.includes(a.id)) || NAV.indexOf(a) - NAV.indexOf(b));

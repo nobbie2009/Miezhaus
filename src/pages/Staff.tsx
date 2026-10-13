@@ -1,7 +1,12 @@
 import { Briefcase, Lock, Users } from 'lucide-react';
 import type { Services } from '@/domain/schema';
 import { useDispatch, useGs } from '@/hooks/useGameState';
-import { Badge, Card, CardBody, CardHeader, DataTable, Tip } from '@/components/ui';
+import { Badge, Button, Card, CardBody, CardHeader, DataTable, EuroInput, Field, Progress, Select, Tip } from '@/components/ui';
+import { useGame } from '@/store/gameStore';
+import { STRATEGY_LABEL, autoSpentThisMonth, automationChannel } from '@/game/automation';
+import type { Automation, Trade } from '@/domain/schema';
+import { formatPercent } from '@/utils/money';
+import { Bot } from 'lucide-react';
 import { CONFIG } from '@/game/config';
 import { TRADE_LABEL } from '@/content/components';
 import { hasUnlock } from '@/game/progression';
@@ -54,6 +59,8 @@ function ServiceCard<K extends keyof Services>({ k, title, description, options 
 
 export function StaffPage() {
   const s = useGs();
+  const dispatch = useDispatch();
+  const busy = useGame((x) => x.busy);
   const c = CONFIG.costs;
   const n = s.apartments.length;
   return (
@@ -115,9 +122,11 @@ export function StaffPage() {
           <CardBody className="grid gap-2">
             <Toggle k="maintenancePlan" label="Wartungsvertrag Haustechnik" cost={c.maintenancePlan} effect="Jährliche Wartung von Heizung, Elektrik, Leitungen, Sanitär und Dach – automatisch." unlock="maintenance_plan" />
             <Toggle k="winterService" label="Winterdienst" cost={c.winterService} effect="Räumen und Streuen bei Frost. Ohne Hausmeister sonst Ärger bei Glätte." />
+            <Toggle k="tenantApp" label="Mieter-App" cost={c.tenantAppBase + c.tenantAppPerUnit * n} effect="Mieter melden Schäden per Foto, beauftragen Handwerker nach Ihren Regeln selbst und fühlen sich besser betreut." />
           </CardBody>
         </Card>
       </div>
+      <AutomationCard />
       <Card>
         <CardHeader title="Handwerker & Dienstleister" icon={<Briefcase size={16} />} subtitle="Der günstigste Anbieter ist nicht immer die wirtschaftlich beste Wahl – Qualität und Zuverlässigkeit zählen" />
         <DataTable
@@ -132,6 +141,20 @@ export function StaffPage() {
             { key: 'p', header: 'Preisniveau', align: 'right', cell: (x) => `${Math.round(x.priceFactor * 100)} %`, sort: (x) => x.priceFactor },
             { key: 'w', header: 'Vorlauf', align: 'right', cell: (x) => `${x.waitDays} T.`, sort: (x) => x.waitDays },
             { key: 'j', header: 'Aufträge', align: 'right', cell: (x) => x.jobsDone, sort: (x) => x.jobsDone },
+            {
+              key: 'f',
+              header: <Tip content={`Rahmenvertrag: ${Math.round(c.frameworkDiscount * 100)} % Rabatt, kürzerer Vorlauf, Ihre Aufträge werden bevorzugt. ${formatMoney(c.frameworkContractFee)} pro Monat.`}><span>Rahmenvertrag</span></Tip>,
+              align: 'right',
+              cell: (x) => {
+                const on = s.automation.frameworkContracts.includes(x.id);
+                return (
+                  <Button size="sm" variant={on ? 'primary' : 'outline'} disabled={busy} onClick={() => dispatch({ type: 'toggleFramework', contractorId: x.id })} aria-pressed={on}>
+                    {on ? 'aktiv' : 'abschließen'}
+                  </Button>
+                );
+              },
+              sort: (x) => Number(s.automation.frameworkContracts.includes(x.id)),
+            },
           ]}
         />
       </Card>
@@ -145,7 +168,7 @@ export function StaffPage() {
   );
 }
 
-function Toggle({ k, label, cost, effect, unlock }: { k: 'maintenancePlan' | 'winterService'; label: string; cost: number; effect: string; unlock?: string }) {
+function Toggle({ k, label, cost, effect, unlock }: { k: 'maintenancePlan' | 'winterService' | 'tenantApp'; label: string; cost: number; effect: string; unlock?: string }) {
   const s = useGs();
   const dispatch = useDispatch();
   const on = s.services[k];
@@ -161,5 +184,90 @@ function Toggle({ k, label, cost, effect, unlock }: { k: 'maintenancePlan' | 'wi
       </div>
       <div className="num shrink-0 text-sm font-semibold">{formatMoney(cost, { decimals: false })}/M.</div>
     </button>
+  );
+}
+
+function Check({ label, hint, checked, onChange }: { label: string; hint?: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-border p-2.5 text-sm">
+      <input type="checkbox" className="mt-0.5 h-4 w-4 accent-[hsl(var(--primary))]" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <span>
+        <span className="font-medium">{label}</span>
+        {hint && <span className="block text-xs text-muted-fg">{hint}</span>}
+      </span>
+    </label>
+  );
+}
+
+/** Regeln für die automatische Auftragsvergabe (Mieter-App / Hausverwaltung) und Vermietung. */
+function AutomationCard() {
+  const s = useGs();
+  const dispatch = useDispatch();
+  const a = s.automation;
+  const set = (patch: Partial<Automation>) => dispatch({ type: 'setAutomation', patch });
+  const channel = automationChannel(s);
+  const spent = autoSpentThisMonth(s);
+  const trades = Array.from(new Set(s.contractors.map((x) => x.trade))) as Trade[];
+  return (
+    <Card>
+      <CardHeader
+        title="Automatik: Reparaturen & Vermietung"
+        icon={<Bot size={16} />}
+        subtitle="Gilt für alle Objekte. Aufträge werden nur vergeben, wenn im jeweiligen Haus die Mieter-App oder eine externe Hausverwaltung aktiv ist."
+        actions={channel ? <Badge tone="success">{channel === 'app' ? 'Mieter-App aktiv' : 'Hausverwaltung aktiv'}</Badge> : <Badge tone="warning">in diesem Haus inaktiv</Badge>}
+      />
+      <CardBody className="grid gap-5 lg:grid-cols-3">
+        <div className="space-y-2">
+          <Check label="Schäden automatisch beauftragen" hint="Gemeldete Schäden werden sofort an einen passenden Betrieb vergeben." checked={a.autoRepair} onChange={(v) => set({ autoRepair: v })} />
+          <Check label="Kritische Schäden immer beauftragen" hint="Rohrbruch, Heizungsausfall & Co. auch über Grenze und Budget hinaus." checked={a.includeCritical} onChange={(v) => set({ includeCritical: v })} />
+          <Check label="Vorbeugende Wartung" hint="Bauteile unter 50 % Zustand werden gewartet (wöchentliche Prüfung)." checked={a.autoMaintenance} onChange={(v) => set({ autoMaintenance: v })} />
+          <Check label="Leere Wohnungen renovieren" hint="Renovierungsbedürftige Wohnungen werden gestrichen, damit sie vermietbar werden." checked={a.autoRenovateVacant} onChange={(v) => set({ autoRenovateVacant: v })} />
+        </div>
+        <div className="space-y-3">
+          <Field label="Strategie bei der Anbieterwahl">
+            <Select value={a.strategy} onChange={(v) => set({ strategy: v as Automation['strategy'] })} options={Object.entries(STRATEGY_LABEL).map(([value, label]) => ({ value, label }))} aria-label="Strategie" />
+          </Field>
+          <Field label="Höchstbetrag je Auftrag" hint="Teurere Aufträge warten auf Ihre Freigabe.">
+            <EuroInput value={a.maxAutoCost} onChange={(v) => set({ maxAutoCost: Math.max(0, v) })} min={0} step={50} aria-label="Höchstbetrag je Auftrag" />
+          </Field>
+          <Field label="Monatsbudget (alle Objekte)" hint={`Diesen Monat vergeben: ${formatMoney(spent, { decimals: false })}`}>
+            <EuroInput value={a.monthlyBudget} onChange={(v) => set({ monthlyBudget: Math.max(0, v) })} min={0} step={100} aria-label="Monatsbudget" />
+          </Field>
+          <Progress value={Math.min(100, (spent / Math.max(1, a.monthlyBudget)) * 100)} tone={spent > a.monthlyBudget * 0.9 ? 'warning' : 'primary'} />
+          <Field label="Mindestreserve auf dem Konto">
+            <EuroInput value={a.minCashReserve} onChange={(v) => set({ minCashReserve: Math.max(0, v) })} min={0} step={500} aria-label="Mindestreserve" />
+          </Field>
+        </div>
+        <div className="space-y-3">
+          <Check label="Vermietungsservice" hint={s.services.management === 'agency' ? 'Inklusive bei externer Hausverwaltung.' : `Inseriert leere Wohnungen und wählt Mieter aus. Provision ${CONFIG.automation.lettingFeeRents} Kaltmieten je Vertrag.`} checked={a.autoLetting} onChange={(v) => set({ autoLetting: v })} />
+          <Field label="Angebotsmiete (relativ zur Vergleichsmiete)">
+            <Select value={String(a.lettingRentFactor)} onChange={(v) => set({ lettingRentFactor: Number(v) })} options={[0.9, 0.95, 0.97, 1, 1.05, 1.1].map((f) => ({ value: String(f), label: formatPercent(f) }))} aria-label="Angebotsmiete" />
+          </Field>
+          <Field label="Mindest-Passung der Bewerber">
+            <Select value={String(a.minApplicantFit)} onChange={(v) => set({ minApplicantFit: Number(v) })} options={[0.4, 0.5, 0.6, 0.7, 0.8].map((f) => ({ value: String(f), label: formatPercent(f) }))} aria-label="Mindest-Passung" />
+          </Field>
+          <details className="rounded-lg border border-border p-2.5 text-sm">
+            <summary className="cursor-pointer font-medium">Bevorzugte Betriebe je Gewerk</summary>
+            <div className="mt-2 grid gap-2">
+              {trades.map((t) => (
+                <Field key={t} label={TRADE_LABEL[t]}>
+                  <Select
+                    value={a.preferred[t] ?? ''}
+                    onChange={(v) => {
+                      const preferred = { ...a.preferred };
+                      if (v) preferred[t] = v;
+                      else delete preferred[t];
+                      set({ preferred });
+                    }}
+                    options={[{ value: '', label: 'nach Strategie' }, ...s.contractors.filter((x) => x.trade === t).map((x) => ({ value: x.id, label: x.name }))]}
+                    aria-label={`Bevorzugt ${TRADE_LABEL[t]}`}
+                  />
+                </Field>
+              ))}
+            </div>
+          </details>
+        </div>
+      </CardBody>
+    </Card>
   );
 }
