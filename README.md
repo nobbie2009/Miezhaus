@@ -178,7 +178,9 @@ Spielstände liegen im Browser, nicht im Container. Ein Docker-Neustart oder Upd
 
 Alle 144 Grafiken sind optional und werden automatisch erkannt (`public/gfx/<Pfad>.webp|png|svg`); fehlende werden durch die eingebauten Vektorzeichnungen ersetzt. Status: *Einstellungen → Grafiken & Texturen*. Liste mit Maßen und Stilvorgaben: [`docs/GRAFIKEN.md`](docs/GRAFIKEN.md).
 
-Drei Wege, die Grafiken zu erzeugen – alle speichern automatisch unter dem richtigen Namen:
+Mitgeliefert sind 144 selbst gezeichnete Vektorgrafiken (SVG) im einheitlichen Flat-Stil, erzeugt per Code mit `npm run gfx:art` (Generator in `scripts/art/`). Eigene WebP-/PNG-Dateien mit demselben Namen haben Vorrang und ersetzen sie automatisch.
+
+Drei Wege, eigene Grafiken zu erzeugen – alle speichern automatisch unter dem richtigen Namen:
 
 | Weg | Aufwand | Befehl / Datei |
 |---|---|---|

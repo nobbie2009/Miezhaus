@@ -15,7 +15,8 @@
     "balance": "vitest run tests/balance",
     "gfx:import": "vite-node scripts/import-gfx.ts",
     "gfx:docs": "vite-node scripts/gen-graphics-doc.ts && vite-node scripts/gen-chatgpt-prompts.ts",
-    "gfx:generate": "vite-node scripts/generate-gfx-openai.ts --"
+    "gfx:generate": "vite-node scripts/generate-gfx-openai.ts --",
+    "gfx:art": "vite-node scripts/art/build.ts"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

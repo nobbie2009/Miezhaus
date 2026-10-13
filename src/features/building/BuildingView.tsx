@@ -62,7 +62,7 @@ export function BuildingView({ s, selectedId, onSelectApartment, onSelectCompone
   const baseTex = (c.basement!.condition < 50 || hasDefect('basement_moisture') || hasDefect('basement_mold')) && G('tex.basement_damp') ? 'tex.basement_damp' : 'tex.basement';
   const groundTex = season === 'winter' ? 'tex.ground_snow' : b.outdoorCare >= 45 ? 'tex.ground_grass' : 'tex.ground_dry';
   const TEX_TILES: [string, number, number][] = [
-    [facadeTex, 128, 128],
+    [facadeTex, 176, 176],
     [roofTex, 96, 96],
     [baseTex, 96, 96],
     ['tex.stairwell', STAIR_W, 92],
@@ -101,8 +101,8 @@ export function BuildingView({ s, selectedId, onSelectApartment, onSelectCompone
       <rect x="0" y="0" width={W} height={groundY} fill="url(#sky)" className="dark:opacity-60" />
       {G(`bg.sky_${season}`) && <image href={G(`bg.sky_${season}`)!} x={0} y={0} width={W} height={groundY} preserveAspectRatio="xMidYMid slice" className="dark:opacity-70" />}
       {/* Sonne / Wolke */}
-      {season === 'summer' && <circle cx={W - 40} cy={30} r={14} fill="#fde047" opacity="0.9" />}
-      {season !== 'summer' && <ellipse cx={50} cy={28} rx={26} ry={9} fill="#fff" opacity="0.7" />}
+      {!G(`bg.sky_${season}`) && season === 'summer' && <circle cx={W - 40} cy={30} r={14} fill="#fde047" opacity="0.9" />}
+      {!G(`bg.sky_${season}`) && season !== 'summer' && <ellipse cx={50} cy={28} rx={26} ry={9} fill="#fff" opacity="0.7" />}
 
       {/* Außenbereich */}
       <g onClick={sel('outdoor')} className={onSelectComponent ? 'cursor-pointer' : ''}>

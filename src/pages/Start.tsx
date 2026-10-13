@@ -37,6 +37,7 @@ export function StartScreen() {
   };
   const scenarios = SCENARIOS.filter((s) => s.mode === mode);
   const startBg = useGfx('bg.start');
+  const wideLogo = useGfx('ui.logo_wide');
   return (
     <TooltipProvider>
       <div className="relative min-h-full bg-gradient-to-b from-primary/10 via-bg to-bg">
@@ -45,9 +46,9 @@ export function StartScreen() {
           <div className="grid items-center gap-8 lg:grid-cols-[1fr_1.1fr]">
             <div>
               <div className="flex items-center gap-3">
-                <GfxImage id="ui.logo" className="h-14 w-14 object-contain" fallback={<img src="/favicon.svg" alt="" className="h-14 w-14" />} />
+                {!wideLogo && <GfxImage id="ui.logo" className="h-14 w-14 object-contain" fallback={<img src="/favicon.svg" alt="" className="h-14 w-14" />} />}
                 <div>
-                  <GfxImage id="ui.logo_wide" alt="Mietshaus Tycoon" className="h-12 w-auto" fallback={<h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Mietshaus Tycoon</h1>} />
+                  <GfxImage id="ui.logo_wide" alt="Mietshaus Tycoon" className="h-20 w-auto" fallback={<h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Mietshaus Tycoon</h1>} />
                   <p className="text-sm text-muted-fg">Die Wirtschaftssimulation rund um ein Mietshaus</p>
                 </div>
               </div>
