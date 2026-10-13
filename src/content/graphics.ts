@@ -123,7 +123,7 @@ add({ id: 'event.generic', path: 'events/generic', kind: 'illustration', group: 
 for (const m of MEASURES)
   add({ id: `measure.${m.id}`, path: `measures/${m.id}`, kind: 'illustration', group: 'Maßnahmen-Bilder', label: m.label, size: [640, 320], priority: 3, usage: 'Karte im Renovierungskatalog (Vorher/Nachher-Gefühl)' });
 for (const k of COMPONENT_ORDER)
-  add({ id: `component.${k}`, path: `components/${k}`, kind: 'icon', group: 'Bauteil-Icons', label: COMPONENTS[k].label, size: [128, 128], transparent: true, priority: 3, usage: 'Bauteilliste in der Gebäudeansicht' });
+  add({ id: `component.${k}`, path: `components/icon_${k}`, kind: 'icon', group: 'Bauteil-Icons', label: COMPONENTS[k].label, size: [128, 128], transparent: true, priority: 3, usage: 'Bauteilliste in der Gebäudeansicht' });
 
 // ---------------------------------------------------------------- Marke
 add({ id: 'ui.logo', path: 'ui/logo', kind: 'icon', group: 'Logo & Oberfläche', label: 'Spiellogo (quadratisch)', size: [512, 512], transparent: true, priority: 1, usage: 'Startbildschirm, Seitenleiste' });

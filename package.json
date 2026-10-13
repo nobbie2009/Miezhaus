@@ -12,7 +12,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "balance": "vitest run tests/balance"
+    "balance": "vitest run tests/balance",
+    "gfx:import": "vite-node scripts/import-gfx.ts",
+    "gfx:docs": "vite-node scripts/gen-graphics-doc.ts && vite-node scripts/gen-chatgpt-prompts.ts"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
@@ -37,6 +39,7 @@
     "fake-indexeddb": "^6.0.0",
     "jsdom": "^25.0.1",
     "postcss": "^8.4.49",
+    "sharp": "^0.33.5",
     "tailwindcss": "^3.4.19",
     "typescript": "^5.6.3",
     "vite": "^5.4.21",

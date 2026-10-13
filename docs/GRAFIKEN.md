@@ -190,16 +190,16 @@ Insgesamt **144 Grafiken** – davon 24 mit Priorität 1, 51 mit Priorität 2.
 
 | Datei (unter public/gfx/) | Inhalt | Größe (px) | Eigenschaften | Priorität | Verwendung |
 |---|---|---|---|---|---|
-| `components/roof.webp` | Dach | 128×128 | transparent | P3 – optional | Bauteilliste in der Gebäudeansicht |
-| `components/facade.webp` | Fassade | 128×128 | transparent | P3 – optional | Bauteilliste in der Gebäudeansicht |
-| `components/windows.webp` | Fenster | 128×128 | transparent | P3 – optional | Bauteilliste in der Gebäudeansicht |
-| `components/heating.webp` | Heizungsanlage | 128×128 | transparent | P3 – optional | Bauteilliste in der Gebäudeansicht |
-| `components/pipes.webp` | Wasserleitungen | 128×128 | transparent | P3 – optional | Bauteilliste in der Gebäudeansicht |
-| `components/sanitary.webp` | Sanitäranlagen | 128×128 | transparent | P3 – optional | Bauteilliste in der Gebäudeansicht |
-| `components/electrical.webp` | Elektroinstallation | 128×128 | transparent | P3 – optional | Bauteilliste in der Gebäudeansicht |
-| `components/stairwell.webp` | Treppenhaus | 128×128 | transparent | P3 – optional | Bauteilliste in der Gebäudeansicht |
-| `components/basement.webp` | Keller | 128×128 | transparent | P3 – optional | Bauteilliste in der Gebäudeansicht |
-| `components/outdoor.webp` | Außenbereich | 128×128 | transparent | P3 – optional | Bauteilliste in der Gebäudeansicht |
+| `components/icon_roof.webp` | Dach | 128×128 | transparent | P3 – optional | Bauteilliste in der Gebäudeansicht |
+| `components/icon_facade.webp` | Fassade | 128×128 | transparent | P3 – optional | Bauteilliste in der Gebäudeansicht |
+| `components/icon_windows.webp` | Fenster | 128×128 | transparent | P3 – optional | Bauteilliste in der Gebäudeansicht |
+| `components/icon_heating.webp` | Heizungsanlage | 128×128 | transparent | P3 – optional | Bauteilliste in der Gebäudeansicht |
+| `components/icon_pipes.webp` | Wasserleitungen | 128×128 | transparent | P3 – optional | Bauteilliste in der Gebäudeansicht |
+| `components/icon_sanitary.webp` | Sanitäranlagen | 128×128 | transparent | P3 – optional | Bauteilliste in der Gebäudeansicht |
+| `components/icon_electrical.webp` | Elektroinstallation | 128×128 | transparent | P3 – optional | Bauteilliste in der Gebäudeansicht |
+| `components/icon_stairwell.webp` | Treppenhaus | 128×128 | transparent | P3 – optional | Bauteilliste in der Gebäudeansicht |
+| `components/icon_basement.webp` | Keller | 128×128 | transparent | P3 – optional | Bauteilliste in der Gebäudeansicht |
+| `components/icon_outdoor.webp` | Außenbereich | 128×128 | transparent | P3 – optional | Bauteilliste in der Gebäudeansicht |
 
 ### Logo & Oberfläche (2)
 
