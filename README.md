@@ -176,7 +176,17 @@ Spielstände liegen im Browser, nicht im Container. Ein Docker-Neustart oder Upd
 
 ## Eigene Grafiken & Texturen
 
-Alle Grafiken sind optional und werden automatisch erkannt: Dateien unter `public/gfx/<Pfad>.webp|png|svg` ablegen und neu laden – fehlende werden durch die eingebauten Vektorzeichnungen ersetzt. Die vollständige Liste (144 Einträge mit Maßen, Eigenschaften, Priorität und Stilvorgaben) steht in [`docs/GRAFIKEN.md`](docs/GRAFIKEN.md); der Status ist unter *Einstellungen → Grafiken & Texturen* sichtbar. Im Docker-Betrieb lassen sich Grafiken auch per Volume nach `/usr/share/nginx/html/gfx` einbinden.
+Alle 144 Grafiken sind optional und werden automatisch erkannt (`public/gfx/<Pfad>.webp|png|svg`); fehlende werden durch die eingebauten Vektorzeichnungen ersetzt. Status: *Einstellungen → Grafiken & Texturen*. Liste mit Maßen und Stilvorgaben: [`docs/GRAFIKEN.md`](docs/GRAFIKEN.md).
+
+Drei Wege, die Grafiken zu erzeugen – alle speichern automatisch unter dem richtigen Namen:
+
+| Weg | Aufwand | Befehl / Datei |
+|---|---|---|
+| **Vollautomatisch** über die OpenAI-Bild-API | 1 Befehl, API-Schlüssel nötig (kostenpflichtig) | `OPENAI_API_KEY=sk-… npm run gfx:generate` (Optionen: `-- --prio=1`, `--quality=low/medium/high`, `--only=tex.,spr.`, `--force`, `--dry-run`) |
+| **ChatGPT-Sammelblätter** (mehrere Grafiken pro Bild) | 26 Prompts, Dateien nur `sheet_01.png` … benennen | [`docs/CHATGPT_SAMMELBLAETTER.md`](docs/CHATGPT_SAMMELBLAETTER.md), danach `npm run gfx:import` |
+| **Einzelbilder** in ChatGPT (höchste Kontrolle) | 144 Prompts | [`docs/CHATGPT_PROMPTS.md`](docs/CHATGPT_PROMPTS.md), danach `npm run gfx:import` |
+
+`npm run gfx:import` liest `gfx-incoming/`, zerschneidet Sammelblätter, ordnet Einzeldateien über den Namen zu, skaliert auf die Zielgröße, schneidet transparente Ränder ab und speichert WebP nach `public/gfx/`. Bereits erzeugte Grafiken überspringt `gfx:generate`, ein abgebrochener Lauf kann einfach neu gestartet werden. Die Prompt-Dateien werden mit `npm run gfx:docs` aus dem Manifest (`src/content/graphics.ts`) neu erzeugt. Im Docker-Betrieb lassen sich Grafiken auch per Volume nach `/usr/share/nginx/html/gfx` einbinden.
 
 ## Optionale lokale KI
 
